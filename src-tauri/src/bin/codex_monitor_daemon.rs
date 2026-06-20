@@ -103,20 +103,18 @@ fn spawn_with_client(
     default_bin: Option<String>,
     codex_args: Option<String>,
     codex_home: Option<PathBuf>,
+    settings_path: PathBuf,
 ) -> impl std::future::Future<Output = Result<Arc<WorkspaceSession>, String>> {
-    let provider = match backend::storage::settings_path() {
-        Ok(path) => {
-            if let Ok(settings) = backend::storage::read_settings(&path) {
-                if settings.use_third_party_provider {
-                    settings.third_party_provider
-                } else {
-                    None
-                }
+    let provider = {
+        if let Ok(settings) = read_settings(&settings_path) {
+            if settings.use_third_party_provider {
+                settings.third_party_provider
             } else {
                 None
             }
+        } else {
+            None
         }
-        Err(_) => None,
     };
 
     spawn_workspace_session(
@@ -283,6 +281,7 @@ impl DaemonState {
                     default_bin,
                     codex_args,
                     codex_home,
+                    self.settings_path.clone(),
                 )
             },
         )
@@ -313,6 +312,7 @@ impl DaemonState {
                     default_bin,
                     codex_args,
                     codex_home,
+                    self.settings_path.clone(),
                 )
             },
         )
@@ -361,6 +361,7 @@ impl DaemonState {
                     default_bin,
                     codex_args,
                     codex_home,
+                    self.settings_path.clone(),
                 )
             },
         )
@@ -462,6 +463,7 @@ impl DaemonState {
                     default_bin,
                     codex_args,
                     codex_home,
+                    self.settings_path.clone(),
                 )
             },
         )
@@ -535,6 +537,7 @@ impl DaemonState {
                     default_bin,
                     codex_args,
                     codex_home,
+                    self.settings_path.clone(),
                 )
             },
         )
@@ -563,6 +566,7 @@ impl DaemonState {
                     default_bin,
                     codex_args,
                     codex_home,
+                    self.settings_path.clone(),
                 )
             },
         )
@@ -589,6 +593,7 @@ impl DaemonState {
                     default_bin,
                     next_args,
                     codex_home,
+                    self.settings_path.clone(),
                 )
             },
         )
@@ -990,6 +995,7 @@ impl DaemonState {
                     default_bin,
                     codex_args,
                     codex_home,
+                    self.settings_path.clone(),
                 )
             },
         )
