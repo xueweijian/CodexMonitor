@@ -8,6 +8,7 @@ use tauri::WindowEvent;
 
 mod backend;
 mod codex;
+mod codex_installer;
 mod daemon_binary;
 mod dictation;
 mod event_sink;
@@ -180,8 +181,8 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_notification::init())
         .invoke_handler(tauri::generate_handler![
-            shared::codex_installer::download_codex_cli,
-            shared::codex_installer::save_codex_path,
+            codex_installer::download_codex_cli,
+            codex_installer::save_codex_path,
             settings::get_app_settings,
             settings::update_app_settings,
             settings::get_codex_config_path,
