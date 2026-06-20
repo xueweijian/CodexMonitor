@@ -1,4 +1,5 @@
 import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
+import { useTranslation } from "react-i18next";
 import type { AppSettings } from "@/types";
 import {
   CODE_FONT_SIZE_MAX,
@@ -69,6 +70,7 @@ export function SettingsDisplaySection({
   onTestNotificationSound,
   onTestSystemNotification,
 }: SettingsDisplaySectionProps) {
+  const { t } = useTranslation("settings");
   const scrollbackUnlimited = appSettings.chatHistoryScrollbackItems === null;
   const [scrollbackDraft, setScrollbackDraft] = useState(() => {
     const value = appSettings.chatHistoryScrollbackItems;
@@ -166,6 +168,25 @@ export function SettingsDisplaySection({
       <div className="settings-subsection-title">Display</div>
       <div className="settings-subsection-subtitle">
         Adjust how the window renders backgrounds and effects.
+      </div>
+      <div className="settings-field">
+        <label className="settings-field-label" htmlFor="language-select">
+          {t("language")}
+        </label>
+        <select
+          id="language-select"
+          className="settings-select"
+          value={appSettings.language}
+          onChange={(event) =>
+            void onUpdateAppSettings({
+              ...appSettings,
+              language: event.target.value,
+            })
+          }
+        >
+          <option value="zh">{t("language_zh")}</option>
+          <option value="en">{t("language_en")}</option>
+        </select>
       </div>
       <div className="settings-field">
         <label className="settings-field-label" htmlFor="theme-select">

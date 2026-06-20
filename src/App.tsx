@@ -41,6 +41,8 @@ import "./styles/compact-phone.css";
 import "./styles/compact-tablet.css";
 import { useWindowLabel } from "@/features/layout/hooks/useWindowLabel";
 import MainApp from "@app/components/MainApp";
+import { I18nextProvider } from "react-i18next";
+import i18n from "@/i18n";
 
 const AboutView = lazy(() =>
   import("@/features/about/components/AboutView").then((module) => ({
@@ -53,11 +55,17 @@ export default function App() {
 
   if (windowLabel === "about") {
     return (
-      <Suspense fallback={null}>
-        <AboutView />
-      </Suspense>
+      <I18nextProvider i18n={i18n}>
+        <Suspense fallback={null}>
+          <AboutView />
+        </Suspense>
+      </I18nextProvider>
     );
   }
 
-  return <MainApp />;
+  return (
+    <I18nextProvider i18n={i18n}>
+      <MainApp />
+    </I18nextProvider>
+  );
 }

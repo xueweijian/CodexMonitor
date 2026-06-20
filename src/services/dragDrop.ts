@@ -1,4 +1,5 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { isTauri } from "@tauri-apps/api/core";
 
 export type DragDropPayload = {
   type: "enter" | "over" | "leave" | "drop";
@@ -21,7 +22,7 @@ let listenPromise: Promise<() => void> | null = null;
 const listeners = new Set<Listener>();
 
 function start(options?: SubscriptionOptions) {
-  if (unlisten || listenPromise) {
+  if (unlisten || listenPromise || !isTauri()) {
     return;
   }
   listenPromise = getCurrentWindow()

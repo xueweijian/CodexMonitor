@@ -108,6 +108,7 @@ const baseSettings: AppSettings = {
   lastComposerModelId: null,
   lastComposerReasoningEffort: null,
   uiScale: 1,
+  language: "zh",
   theme: "system",
   usageShowRemaining: false,
   showMessageFilePath: true,
@@ -508,6 +509,20 @@ const renderEnvironmentsSection = (
 };
 
 describe("SettingsView Display", () => {
+  it("updates the language selection", async () => {
+    const onUpdateAppSettings = vi.fn().mockResolvedValue(undefined);
+    renderDisplaySection({ onUpdateAppSettings });
+
+    const select = screen.getByLabelText("language");
+    fireEvent.change(select, { target: { value: "en" } });
+
+    await waitFor(() => {
+      expect(onUpdateAppSettings).toHaveBeenCalledWith(
+        expect.objectContaining({ language: "en" }),
+      );
+    });
+  });
+
   it("updates the theme selection", async () => {
     const onUpdateAppSettings = vi.fn().mockResolvedValue(undefined);
     renderDisplaySection({ onUpdateAppSettings });

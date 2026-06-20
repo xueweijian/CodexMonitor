@@ -29,9 +29,13 @@ export function useUiScaleShortcuts({
     if (typeof window === "undefined") {
       return;
     }
-    getCurrentWebview()
-      .setZoom(uiScale)
-      .catch(() => undefined);
+    try {
+      getCurrentWebview()
+        .setZoom(uiScale)
+        .catch(() => undefined);
+    } catch {
+      // Ignore in non-Tauri browser environments.
+    }
   }, [uiScale]);
 
   const scaleShortcutLabel = useMemo(() => {

@@ -166,6 +166,7 @@ function buildDefaultSettings(): AppSettings {
     lastComposerModelId: null,
     lastComposerReasoningEffort: null,
     uiScale: UI_SCALE_DEFAULT,
+    language: "zh",
     theme: "system",
     usageShowRemaining: false,
     showMessageFilePath: true,
@@ -246,6 +247,7 @@ function normalizeAppSettings(settings: AppSettings): AppSettings {
     codexBin: settings.codexBin?.trim() ? settings.codexBin.trim() : null,
     codexArgs: settings.codexArgs?.trim() ? settings.codexArgs.trim() : null,
     uiScale: clampUiScale(settings.uiScale),
+    language: settings.language || "zh",
     theme: allowedThemes.has(settings.theme) ? settings.theme : "system",
     uiFontFamily: normalizeFontFamily(
       settings.uiFontFamily,

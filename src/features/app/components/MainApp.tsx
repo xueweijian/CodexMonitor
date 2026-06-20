@@ -80,6 +80,7 @@ import {
 import { useAppShellOrchestration } from "@app/orchestration/useLayoutOrchestration";
 import { normalizeCodexArgsInput } from "@/utils/codexArgsInput";
 import { subscribeTrayOpenThread } from "@services/events";
+import i18n from "@/i18n";
 
 const SettingsView = lazy(() =>
   import("@settings/components/SettingsView").then((module) => ({
@@ -120,6 +121,13 @@ export default function MainApp() {
     clearDebugEntries,
     shouldReduceTransparency,
   } = useAppBootstrapOrchestration();
+
+  useEffect(() => {
+    if (!appSettingsLoading && appSettings.language) {
+      void i18n.changeLanguage(appSettings.language);
+    }
+  }, [appSettings.language, appSettingsLoading]);
+
   const {
     threadListSortKey,
     setThreadListSortKey,

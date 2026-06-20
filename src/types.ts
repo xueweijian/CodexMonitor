@@ -268,6 +268,7 @@ export type AppSettings = {
   lastComposerModelId: string | null;
   lastComposerReasoningEffort: string | null;
   uiScale: number;
+  language: string;
   theme: ThemePreference;
   usageShowRemaining: boolean;
   showMessageFilePath: boolean;

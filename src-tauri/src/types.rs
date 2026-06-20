@@ -487,6 +487,8 @@ pub(crate) struct AppSettings {
     pub(crate) last_composer_reasoning_effort: Option<String>,
     #[serde(default = "default_ui_scale", rename = "uiScale")]
     pub(crate) ui_scale: f64,
+    #[serde(default = "default_language", rename = "language")]
+    pub(crate) language: String,
     #[serde(default = "default_theme", rename = "theme")]
     pub(crate) theme: String,
     #[serde(
@@ -705,6 +707,10 @@ fn default_ui_scale() -> f64 {
 
 fn default_theme() -> String {
     "system".to_string()
+}
+
+fn default_language() -> String {
+    "zh".to_string()
 }
 
 fn default_usage_show_remaining() -> bool {
