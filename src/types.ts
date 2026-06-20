@@ -235,6 +235,14 @@ export type OpenAppTarget = {
   args: string[];
 };
 
+export interface ThirdPartyProvider {
+  providerName: string;
+  baseUrl: string;
+  apiKey?: string;
+  model: string;
+  wireApi: "chat" | "responses";
+}
+
 export type AppSettings = {
   codexBin: string | null;
   codexArgs: string | null;
@@ -311,6 +319,8 @@ export type AppSettings = {
   globalWorktreesFolder: string | null;
   openAppTargets: OpenAppTarget[];
   selectedOpenAppId: string;
+  thirdPartyProvider: ThirdPartyProvider | null;
+  useThirdPartyProvider: boolean;
 };
 
 export type CodexFeatureStage =

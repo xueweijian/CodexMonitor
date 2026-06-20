@@ -753,19 +753,42 @@ pub(crate) async fn spawn_workspace_session<E: EventSink>(
     codex_home: Option<PathBuf>,
     client_version: String,
     event_sink: E,
+    third_party_provider: Option<crate::types::ThirdPartyProvider>,
 ) -> Result<Arc<WorkspaceSession>, String> {
     let codex_bin = default_codex_bin;
     let _ = check_codex_installation(codex_bin.clone()).await?;
 
+    let mut args = vec!["app-server".to_string()];
+    
+    if let Some(provider) = third_party_provider {
+        let bridge_port = crate::shared::chat_bridge::start_chat_bridge(provider.clone())?;
+        
+        args.push("-c".into());
+        args.push(format!("model=\"{}\"", provider.model));
+        args.push("-c".into());
+        args.push("model_provider=\"codexmonitor\"".into());
+        args.push("-c".into());
+        args.push("model_providers.codexmonitor.name=\"codexmonitor\"".into());
+        args.push("-c".into());
+        args.push(format!("model_providers.codexmonitor.base_url=\"http://127.0.0.1:{}/v1\"", bridge_port));
+        args.push("-c".into());
+        args.push("model_providers.codexmonitor.wire_api=\"responses\"".into());
+        args.push("-c".into());
+        args.push("model_providers.codexmonitor.env_key=\"CODEXMONITOR_API_KEY\"".into());
+        args.push("-c".into());
+        args.push("model_providers.codexmonitor.requires_openai_auth=false".into());
+    }
+
     let mut command = build_codex_command_with_bin(
         codex_bin,
         codex_args.as_deref(),
-        vec!["app-server".to_string()],
+        args,
     )?;
     command.current_dir(&entry.path);
     if let Some(path) = codex_home.as_ref() {
         command.env("CODEX_HOME", path);
     }
+    command.env("CODEXMONITOR_API_KEY", "dummy");
     command.stdin(std::process::Stdio::piped());
     command.stdout(std::process::Stdio::piped());
     command.stderr(std::process::Stdio::piped());

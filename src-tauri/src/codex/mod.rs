@@ -2,7 +2,7 @@ use serde_json::{json, Map, Value};
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 
 pub(crate) mod args;
 pub(crate) mod config;
@@ -39,7 +39,18 @@ pub(crate) async fn spawn_workspace_session(
     codex_home: Option<PathBuf>,
 ) -> Result<Arc<WorkspaceSession>, String> {
     let client_version = app_handle.package_info().version.to_string();
-    let event_sink = TauriEventSink::new(app_handle);
+    let event_sink = TauriEventSink::new(app_handle.clone());
+    
+    let provider = {
+        let state = app_handle.state::<crate::state::AppState>();
+        let settings = state.app_settings.lock().await;
+        if settings.use_third_party_provider {
+            settings.third_party_provider.clone()
+        } else {
+            None
+        }
+    };
+
     spawn_workspace_session_inner(
         entry,
         default_codex_bin,
@@ -47,6 +58,7 @@ pub(crate) async fn spawn_workspace_session(
         codex_home,
         client_version,
         event_sink,
+        provider,
     )
     .await
 }

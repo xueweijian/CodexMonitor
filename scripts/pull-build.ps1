@@ -22,12 +22,20 @@ if ($authCheck -match "Logged in to github.com" -or $LASTEXITCODE -eq 0) {
     exit 1
 }
 
-# 2. Get current branch name
+# 2. Get current branch name and target repository
 $branch = git branch --show-current
 if ([string]::IsNullOrEmpty($branch)) {
     Write-Warning "Could not determine current Git branch. Defaulting to 'main'."
     $branch = 'main'
 }
+
+$originUrl = git remote get-url origin
+if ($originUrl -match "github\.com[:/]([^/]+/[^/]+?)(?:\.git)?$") {
+    $repoName = $Matches[1]
+} else {
+    $repoName = "xueweijian/CodexMonitor"
+}
+Write-Host "Target repository: $repoName" -ForegroundColor Cyan
 
 # 3. Check for uncommitted/unpushed workflow changes
 $gitStatus = git status --porcelain ".github/workflows/build-windows-manual.yml"
@@ -48,7 +56,7 @@ if (-not [string]::IsNullOrEmpty($gitStatus)) {
 
 # 4. Trigger the GitHub Action workflow
 Write-Host "Triggering workflow 'Build Windows Manual' on branch '$branch' with build_mode='$BuildMode'..." -ForegroundColor Cyan
-gh workflow run build-windows-manual.yml --ref $branch -f build_mode=$BuildMode
+gh workflow run build-windows-manual.yml --ref $branch -f build_mode=$BuildMode -R $repoName
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Failed to trigger the workflow. Please verify that you have pushed the workflow file to GitHub."
     exit 1
@@ -61,7 +69,7 @@ Start-Sleep -Seconds 10
 $runId = $null
 $attempts = 0
 while ($null -eq $runId -and $attempts -lt 5) {
-    $runsJson = gh run list --workflow=build-windows-manual.yml --branch $branch --limit 1 --json databaseId,status,conclusion | ConvertFrom-Json
+    $runsJson = gh run list --workflow=build-windows-manual.yml --branch $branch --limit 1 --json databaseId,status,conclusion -R $repoName | ConvertFrom-Json
     if ($runsJson -and $runsJson.Count -gt 0) {
         $runId = $runsJson[0].databaseId
         $status = $runsJson[0].status
@@ -82,7 +90,7 @@ if ($null -eq $runId) {
 Write-Host "Polling workflow run status..." -ForegroundColor Cyan
 $completed = $false
 while (-not $completed) {
-    $run = gh run view $runId --json status,conclusion | ConvertFrom-Json
+    $run = gh run view $runId --json status,conclusion -R $repoName | ConvertFrom-Json
     $status = $run.status
     $conclusion = $run.conclusion
     
@@ -108,7 +116,7 @@ if (Test-Path $downloadDir) {
 }
 New-Item -ItemType Directory -Path $downloadDir | Out-Null
 
-gh run download $runId --dir $downloadDir
+gh run download $runId --dir $downloadDir -R $repoName
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Failed to download artifacts."
     exit 1

@@ -39,6 +39,17 @@ pub(crate) async fn get_codex_config_path() -> Result<String, String> {
     get_codex_config_path_core()
 }
 
+#[tauri::command]
+pub(crate) async fn test_provider_connection(base_url: String, api_key: String) -> Result<bool, String> {
+    let client = reqwest::Client::new();
+    let mut req = client.get(format!("{}/models", base_url));
+    if !api_key.is_empty() {
+        req = req.header("Authorization", format!("Bearer {}", api_key));
+    }
+    let res = req.send().await.map_err(|e| e.to_string())?;
+    Ok(res.status().is_success())
+}
+
 fn should_reset_remote_backend(previous: &AppSettings, updated: &AppSettings) -> bool {
     let backend_mode_changed = !matches!(
         (&previous.backend_mode, &updated.backend_mode),

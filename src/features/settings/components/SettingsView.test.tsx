@@ -162,6 +162,8 @@ const baseSettings: AppSettings = {
   ],
   selectedOpenAppId: "vscode",
   globalWorktreesFolder: null,
+  thirdPartyProvider: null,
+  useThirdPartyProvider: false,
 };
 
 const createDoctorResult = () => ({

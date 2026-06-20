@@ -104,6 +104,21 @@ fn spawn_with_client(
     codex_args: Option<String>,
     codex_home: Option<PathBuf>,
 ) -> impl std::future::Future<Output = Result<Arc<WorkspaceSession>, String>> {
+    let provider = match backend::storage::settings_path() {
+        Ok(path) => {
+            if let Ok(settings) = backend::storage::read_settings(&path) {
+                if settings.use_third_party_provider {
+                    settings.third_party_provider
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        }
+        Err(_) => None,
+    };
+
     spawn_workspace_session(
         entry,
         default_bin,
@@ -111,6 +126,7 @@ fn spawn_with_client(
         codex_home,
         client_version,
         event_sink,
+        provider,
     )
 }
 

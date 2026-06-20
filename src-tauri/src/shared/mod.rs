@@ -1,4 +1,5 @@
 pub(crate) mod account;
+pub mod chat_bridge;
 pub(crate) mod agents_config_core;
 pub(crate) mod codex_aux_core;
 pub(crate) mod codex_core;
@@ -15,3 +16,4 @@ pub(crate) mod settings_core;
 pub(crate) mod workspace_rpc;
 pub(crate) mod workspaces_core;
 pub(crate) mod worktree_core;
+pub mod codex_installer;

@@ -375,6 +375,37 @@ pub(crate) struct RemoteBackendTarget {
     pub(crate) last_connected_at_ms: Option<i64>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq, Eq)]
+pub(crate) enum WireApiMode {
+    #[default]
+    #[serde(rename = "chat")]
+    Chat,
+    #[serde(rename = "responses")]
+    Responses,
+}
+
+fn default_wire_api() -> WireApiMode {
+    WireApiMode::Chat
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub(crate) struct ThirdPartyProvider {
+    #[serde(default, rename = "providerName")]
+    pub(crate) provider_name: String,
+
+    #[serde(default, rename = "baseUrl")]
+    pub(crate) base_url: String,
+
+    #[serde(default, rename = "apiKey")]
+    pub(crate) api_key: Option<String>,
+
+    #[serde(default)]
+    pub(crate) model: String,
+
+    #[serde(default = "default_wire_api", rename = "wireApi")]
+    pub(crate) wire_api: WireApiMode,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub(crate) struct AppSettings {
     #[serde(default, rename = "codexBin")]
@@ -650,6 +681,10 @@ pub(crate) struct AppSettings {
     pub(crate) open_app_targets: Vec<OpenAppTarget>,
     #[serde(default = "default_selected_open_app_id", rename = "selectedOpenAppId")]
     pub(crate) selected_open_app_id: String,
+    #[serde(default, rename = "thirdPartyProvider")]
+    pub(crate) third_party_provider: Option<ThirdPartyProvider>,
+    #[serde(default, rename = "useThirdPartyProvider")]
+    pub(crate) use_third_party_provider: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -1129,6 +1164,7 @@ fn default_selected_open_app_id() -> String {
 impl Default for AppSettings {
     fn default() -> Self {
         Self {
+            language: default_language(),
             codex_bin: None,
             codex_args: None,
             backend_mode: default_backend_mode(),
@@ -1205,6 +1241,8 @@ impl Default for AppSettings {
             global_worktrees_folder: None,
             open_app_targets: default_open_app_targets(),
             selected_open_app_id: default_selected_open_app_id(),
+            third_party_provider: None,
+            use_third_party_provider: false,
         }
     }
 }

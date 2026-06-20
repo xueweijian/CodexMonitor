@@ -12,6 +12,7 @@ import {
   SettingsToggleRow,
 } from "@/features/design-system/components/settings/SettingsPrimitives";
 import { FileEditorCard } from "@/features/shared/components/FileEditorCard";
+import { SettingsProviderSection } from "./SettingsProviderSection";
 
 type SettingsCodexSectionProps = {
   appSettings: AppSettings;
@@ -232,7 +233,11 @@ export function SettingsCodexSection({
       title="Codex"
       subtitle="Configure the Codex CLI used by CodexMonitor and validate the install."
     >
-      <div className="settings-field">
+      <SettingsProviderSection
+        settings={appSettings}
+        updateSettings={(partial) => onUpdateAppSettings({ ...appSettings, ...partial })}
+      />
+      <div className="settings-field mt-8">
         <label className="settings-field-label" htmlFor="codex-path">
           Default Codex path
         </label>

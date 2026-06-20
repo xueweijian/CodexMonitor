@@ -2,6 +2,7 @@ import { lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import successSoundUrl from "@/assets/success-notification.mp3";
 import errorSoundUrl from "@/assets/error-notification.mp3";
 import { MainAppShell } from "@app/components/MainAppShell";
+import { CodexInstallGuide } from "./CodexInstallGuide";
 import { useThreads } from "@threads/hooks/useThreads";
 import { usePullRequestComposer } from "@/features/git/hooks/usePullRequestComposer";
 import { useAutoExitEmptyDiff } from "@/features/git/hooks/useAutoExitEmptyDiff";
@@ -121,6 +122,28 @@ export default function MainApp() {
     clearDebugEntries,
     shouldReduceTransparency,
   } = useAppBootstrapOrchestration();
+
+  const [codexMissing, setCodexMissing] = useState(false);
+  const [doctorChecking, setDoctorChecking] = useState(true);
+
+  useEffect(() => {
+    if (appSettingsLoading) return;
+    let active = true;
+    void (async () => {
+      try {
+        await doctor(appSettings.codexBin, appSettings.codexArgs);
+      } catch (e: any) {
+        if (active && (e.toString().includes("not found") || e.toString().includes("failed to start") || e.toString().includes("Install Codex"))) {
+          setCodexMissing(true);
+        }
+      } finally {
+        if (active) setDoctorChecking(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [appSettingsLoading, appSettings.codexBin, appSettings.codexArgs, doctor]);
 
   useEffect(() => {
     if (!appSettingsLoading && appSettings.language) {
@@ -1885,5 +1908,10 @@ export default function MainApp() {
     },
   });
 
-  return <MainAppShell {...mainAppShellProps} />;
+  return (
+    <>
+      <MainAppShell {...mainAppShellProps} />
+      {codexMissing && !doctorChecking && <CodexInstallGuide />}
+    </>
+  );
 }
