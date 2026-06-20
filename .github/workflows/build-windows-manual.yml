@@ -1,0 +1,123 @@
+name: Build Windows Manual
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_mode:
+        description: 'Build Mode (release or debug)'
+        required: true
+        default: 'release'
+        type: choice
+        options:
+          - release
+          - debug
+
+jobs:
+  build:
+    name: Build Windows Binary
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: ${{ runner.os }}-cargo-manual-${{ inputs.build_mode }}-${{ hashFiles('src-tauri/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-manual-${{ inputs.build_mode }}-
+            ${{ runner.os }}-cargo-manual-
+
+      - name: Install LLVM & CMake
+        run: choco install cmake llvm -y --no-progress
+
+      - name: Configure LLVM & CMake Path
+        run: |
+          echo "LIBCLANG_PATH=C:\\Program Files\\LLVM\\bin" >> $env:GITHUB_ENV
+          echo "C:\\Program Files\\LLVM\\bin" >> $env:GITHUB_PATH
+          echo "C:\\Program Files\\CMake\\bin" >> $env:GITHUB_PATH
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Run Windows Doctor
+        run: npm run doctor:win
+
+      - name: Disable Updater Signatures
+        run: |
+          node -e "
+            const fs = require('fs');
+            ['src-tauri/tauri.conf.json', 'src-tauri/tauri.windows.conf.json'].forEach(f => {
+              if (fs.existsSync(f)) {
+                const d = JSON.parse(fs.readFileSync(f, 'utf8'));
+                if (!d.bundle) d.bundle = {};
+                d.bundle.createUpdaterArtifacts = false;
+                fs.writeFileSync(f, JSON.stringify(d, null, 2));
+                console.log('Disabled updater signature requirements in: ' + f);
+              }
+            });
+          "
+
+      - name: Build Tauri App (Release)
+        if: ${{ inputs.build_mode == 'release' }}
+        run: |
+          npx tauri build --config src-tauri/tauri.windows.conf.json
+
+      - name: Build Tauri App (Debug)
+        if: ${{ inputs.build_mode == 'debug' }}
+        run: |
+          npx tauri build --debug --no-bundle --config src-tauri/tauri.windows.conf.json
+
+      - name: Build Daemon Binaries (Release)
+        if: ${{ inputs.build_mode == 'release' }}
+        run: |
+          cd src-tauri
+          cargo build --release --bin codex_monitor_daemon --bin codex_monitor_daemonctl
+
+      - name: Build Daemon Binaries (Debug)
+        if: ${{ inputs.build_mode == 'debug' }}
+        run: |
+          cd src-tauri
+          cargo build --bin codex_monitor_daemon --bin codex_monitor_daemonctl
+
+      - name: Package Release Artifacts
+        if: ${{ inputs.build_mode == 'release' }}
+        shell: bash
+        run: |
+          mkdir -p build-output
+          # Copy installers if they exist
+          cp src-tauri/target/release/bundle/nsis/*.exe build-output/ || true
+          cp src-tauri/target/release/bundle/msi/*.msi build-output/ || true
+          # Copy raw executables
+          cp src-tauri/target/release/codex-monitor.exe build-output/ || true
+          cp src-tauri/target/release/codex_monitor_daemon.exe build-output/ || true
+          cp src-tauri/target/release/codex_monitor_daemonctl.exe build-output/ || true
+
+      - name: Package Debug Artifacts
+        if: ${{ inputs.build_mode == 'debug' }}
+        shell: bash
+        run: |
+          mkdir -p build-output
+          # Copy raw debug executables
+          cp src-tauri/target/debug/codex-monitor.exe build-output/ || true
+          cp src-tauri/target/debug/codex_monitor_daemon.exe build-output/ || true
+          cp src-tauri/target/debug/codex_monitor_daemonctl.exe build-output/ || true
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: codex-monitor-windows-${{ inputs.build_mode }}
+          path: build-output/*
