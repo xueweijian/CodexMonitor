@@ -142,7 +142,7 @@ pub async fn download_codex_cli(app_handle: tauri::AppHandle) -> Result<(), Stri
             let state = app_handle.state::<crate::state::AppState>();
             let mut settings = state.app_settings.lock().await;
             settings.codex_bin = Some(bin_path.to_string_lossy().to_string());
-            let path = crate::paths::app_settings_file(&app_handle).map_err(|e| e.to_string())?;
+            let path = state.settings_path.clone();
             crate::storage::write_settings(&path, &settings).map_err(|e| e.to_string())?;
         }
         return Ok(());
@@ -152,7 +152,7 @@ pub async fn download_codex_cli(app_handle: tauri::AppHandle) -> Result<(), Stri
     let state = app_handle.state::<crate::state::AppState>();
     let mut settings = state.app_settings.lock().await;
     settings.codex_bin = Some(bin_path.to_string_lossy().to_string());
-    let path = crate::paths::app_settings_file(&app_handle).map_err(|e| e.to_string())?;
+    let path = state.settings_path.clone();
     crate::storage::write_settings(&path, &settings).map_err(|e| e.to_string())?;
     Ok(())
 }
@@ -162,7 +162,7 @@ pub async fn save_codex_path(path: String, app_handle: tauri::AppHandle) -> Resu
     let state = app_handle.state::<crate::state::AppState>();
     let mut settings = state.app_settings.lock().await;
     settings.codex_bin = Some(path);
-    let settings_path = crate::paths::app_settings_file(&app_handle).map_err(|e| e.to_string())?;
+    let settings_path = state.settings_path.clone();
     crate::storage::write_settings(&settings_path, &settings).map_err(|e| e.to_string())?;
     Ok(())
 }
