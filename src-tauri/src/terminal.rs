@@ -71,6 +71,7 @@ fn windows_shell_args(shell: &str) -> Vec<&'static str> {
     }
 }
 
+#[allow(dead_code)]
 fn unix_shell_args() -> Vec<&'static str> {
     vec!["-i"]
 }

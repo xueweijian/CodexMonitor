@@ -515,7 +515,7 @@ describe("SettingsView Display", () => {
     const onUpdateAppSettings = vi.fn().mockResolvedValue(undefined);
     renderDisplaySection({ onUpdateAppSettings });
 
-    const select = screen.getByLabelText("language");
+    const select = screen.getByLabelText("Language");
     fireEvent.change(select, { target: { value: "en" } });
 
     await waitFor(() => {

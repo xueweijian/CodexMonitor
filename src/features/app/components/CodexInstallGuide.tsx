@@ -2,8 +2,10 @@ import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
+import { useTranslation } from "react-i18next";
 
 export function CodexInstallGuide() {
+  const { t } = useTranslation("common");
   const [status, setStatus] = useState<"idle" | "installing" | "success" | "error">("idle");
   const [progress, setProgress] = useState(0);
   const [errorMsg, setErrorMsg] = useState("");
@@ -52,7 +54,7 @@ export function CodexInstallGuide() {
       const selectedPath = await open({
         directory: false,
         multiple: false,
-        title: "选择 Codex CLI 可执行文件",
+        title: t("installer.select_file_title"),
       });
       if (selectedPath && !Array.isArray(selectedPath)) {
         await invoke("save_codex_path", { path: selectedPath });
@@ -96,9 +98,9 @@ export function CodexInstallGuide() {
           gap: "1.5rem",
         }}
       >
-        <h2 style={{ margin: 0, fontSize: "1.5rem" }}>需要安装 Codex CLI</h2>
+        <h2 style={{ margin: 0, fontSize: "1.5rem" }}>{t("installer.title")}</h2>
         <p style={{ margin: 0, color: "var(--text-secondary, #ccc)", lineHeight: 1.5 }}>
-          Codex CLI 是 CodexMonitor 运行所必需的核心组件。应用未能在您的系统中找到该组件。请选择以下方式进行安装或配置：
+          {t("installer.description")}
         </p>
 
         {status === "idle" && (
@@ -119,7 +121,7 @@ export function CodexInstallGuide() {
               onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#005f9e")}
               onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "var(--accent-color, #007acc)")}
             >
-              🚀 一键自动安装 (推荐)
+              🚀 {t("installer.auto_install")}
             </button>
             <button
               onClick={handleManualPath}
@@ -136,7 +138,7 @@ export function CodexInstallGuide() {
               onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.05)")}
               onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
             >
-              📂 手动指定 Codex CLI 路径
+              📂 {t("installer.manual_path")}
             </button>
             <button
               onClick={handleOpenDocs}
@@ -150,7 +152,7 @@ export function CodexInstallGuide() {
                 textDecoration: "underline",
               }}
             >
-              📖 查看安装教程
+              📖 {t("installer.view_docs")}
             </button>
           </div>
         )}
@@ -177,23 +179,23 @@ export function CodexInstallGuide() {
               />
             </div>
             <p style={{ margin: 0, color: "var(--text-secondary, #ccc)" }}>
-              正在下载并安装 Codex CLI... {progress}%
+              {t("installer.installing")} {progress}%
             </p>
           </div>
         )}
 
         {status === "success" && (
           <div style={{ color: "#4caf50", textAlign: "center", padding: "1rem 0" }}>
-            <h3 style={{ margin: "0 0 0.5rem 0" }}>✅ 安装完成！</h3>
+            <h3 style={{ margin: "0 0 0.5rem 0" }}>✅ {t("installer.success_title")}</h3>
             <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--text-secondary, #ccc)" }}>
-              正在为您启动应用程序...
+              {t("installer.success_desc")}
             </p>
           </div>
         )}
 
         {status === "error" && (
           <div style={{ color: "#f44336" }}>
-            <h3 style={{ margin: "0 0 0.5rem 0" }}>❌ 安装失败</h3>
+            <h3 style={{ margin: "0 0 0.5rem 0" }}>❌ {t("installer.failed_title")}</h3>
             <pre
               style={{
                 fontSize: "0.85rem",
@@ -224,7 +226,7 @@ export function CodexInstallGuide() {
               onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "rgba(211,47,47,0.1)")}
               onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
             >
-              重试
+              {t("installer.retry")}
             </button>
           </div>
         )}

@@ -385,7 +385,7 @@ describe("SettingsDisplaySection", () => {
       />,
     );
 
-    const select = screen.getByLabelText("language");
+    const select = screen.getByLabelText("Language");
     fireEvent.change(select, { target: { value: "en" } });
 
     expect(onUpdateAppSettings).toHaveBeenCalledWith(

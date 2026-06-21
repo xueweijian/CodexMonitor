@@ -1,13 +1,16 @@
 use serde_json::{json, Value};
 
+#[allow(dead_code)]
 pub fn responses_input_to_chat_messages(_input: &Value) -> Value {
     json!([])
 }
 
+#[allow(dead_code)]
 pub fn chat_delta_to_responses_sse(_delta: &Value) -> String {
     String::new()
 }
 
+#[allow(dead_code)]
 pub fn responses_tools_to_chat_tools(_tools: &Value) -> Value {
     json!([])
 }

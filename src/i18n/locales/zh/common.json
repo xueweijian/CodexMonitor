@@ -2,5 +2,18 @@
   "confirm": "确认",
   "cancel": "取消",
   "save": "保存",
-  "error": "错误"
+  "error": "错误",
+  "installer": {
+    "title": "需要安装 Codex CLI",
+    "description": "Codex CLI 是 CodexMonitor 运行所必需的核心组件。应用未能在您的系统中找到该组件。请选择以下方式进行安装或配置：",
+    "auto_install": "一键自动安装 (推荐)",
+    "manual_path": "手动指定 Codex CLI 路径",
+    "view_docs": "查看安装教程",
+    "installing": "正在下载并安装 Codex CLI...",
+    "success_title": "安装完成！",
+    "success_desc": "正在为您启动应用程序...",
+    "failed_title": "安装失败",
+    "retry": "重试",
+    "select_file_title": "选择 Codex CLI 可执行文件"
+  }
 }

@@ -105,6 +105,7 @@ pub fn run() {
 
     let builder = builder
         .on_window_event(|window, event| {
+            let _ = event;
             if window.label() != "main" {
                 return;
             }

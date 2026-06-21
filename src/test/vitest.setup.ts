@@ -87,3 +87,43 @@ if (!existingLocalStorage || typeof existingLocalStorage.clear !== "function") {
     configurable: true,
   });
 }
+
+import enSettings from "../i18n/locales/en/settings.json";
+import enCommon from "../i18n/locales/en/common.json";
+
+vi.mock("react-i18next", () => {
+  const getTranslation = (key: string, ns?: string) => {
+    let dict: any = ns === "common" ? enCommon : enSettings;
+    let cleanKey = key;
+    if (key.includes(":")) {
+      const [namespace, realKey] = key.split(":");
+      dict = namespace === "common" ? enCommon : enSettings;
+      cleanKey = realKey;
+    }
+    let current = dict;
+    for (const part of cleanKey.split(".")) {
+      if (current && typeof current === "object" && part in current) {
+        current = current[part];
+      } else {
+        return key;
+      }
+    }
+    return typeof current === "string" ? current : key;
+  };
+
+  return {
+    useTranslation: (ns?: string) => ({
+      t: (key: string) => getTranslation(key, ns),
+      i18n: {
+        changeLanguage: vi.fn().mockResolvedValue(undefined),
+        language: "en",
+      },
+    }),
+    initReactI18next: {
+      type: "3rdParty",
+      init: () => {},
+    },
+    I18nextProvider: ({ children }: { children: React.ReactNode }) => children,
+  };
+});
+

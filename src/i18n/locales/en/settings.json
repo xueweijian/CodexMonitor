@@ -2,5 +2,40 @@
   "title": "Settings",
   "language": "Language",
   "language_zh": "简体中文",
-  "language_en": "English"
+  "language_en": "English",
+  "close": "Close settings",
+  "back_to_sections": "Back to sections",
+  "sections": {
+    "projects": "Projects",
+    "environments": "Environments",
+    "display": "Display & Sound",
+    "composer": "Composer",
+    "dictation": "Dictation",
+    "shortcuts": "Shortcuts",
+    "open-apps": "Open in",
+    "git": "Git",
+    "server": "Server",
+    "agents": "Agents",
+    "codex": "Codex",
+    "features": "Features",
+    "about": "About"
+  },
+  "provider": {
+    "enable": "Enable Third-Party Model Provider",
+    "name": "Provider Name",
+    "name_placeholder": "e.g. DeepSeek",
+    "base_url": "API Base URL",
+    "base_url_placeholder": "https://api.deepseek.com/v1",
+    "api_key": "API Key",
+    "api_key_placeholder": "sk-...",
+    "model": "Default Model",
+    "model_placeholder": "e.g. deepseek-chat",
+    "protocol": "Protocol Mode",
+    "protocol_chat": "Chat Completions API",
+    "protocol_responses": "Responses API",
+    "test_connection": "Test Connection",
+    "testing": "Testing...",
+    "success": "Success",
+    "failed": "Failed to connect"
+  }
 }

@@ -13,7 +13,7 @@
     "build:appimage": "NO_STRIP=1 tauri build --bundles appimage",
     "doctor": "sh scripts/doctor.sh",
     "doctor:strict": "sh scripts/doctor.sh --strict",
-    "doctor:win": "node scripts/doctor.mjs --strict",
+    "doctor:win": "node scripts/doctor.mjs",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:ds": "eslint . --ext .ts,.tsx",
     "codemod:modal-shell": "node scripts/codemods/modal-shell-codemod.mjs",

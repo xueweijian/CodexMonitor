@@ -8,6 +8,7 @@ const UNSUPPORTED_MESSAGE: &str = "Dictation is not available on mobile builds."
 
 #[derive(Debug, Serialize, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
+#[allow(dead_code)]
 pub(crate) enum DictationModelState {
     Missing,
     Downloading,
@@ -35,12 +36,14 @@ pub(crate) struct DictationModelStatus {
 
 #[derive(Debug, Serialize, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
+#[allow(dead_code)]
 pub(crate) enum DictationSessionState {
     Idle,
     Listening,
     Processing,
 }
 
+#[allow(dead_code)]
 pub(crate) struct DictationState {
     pub(crate) model_status: DictationModelStatus,
     pub(crate) session_state: DictationSessionState,

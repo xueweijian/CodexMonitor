@@ -15,8 +15,8 @@ import { useSettingsViewOrchestration } from "@settings/hooks/useSettingsViewOrc
 import { ModalShell } from "@/features/design-system/components/modal/ModalShell";
 import { SettingsNav } from "./SettingsNav";
 import type { CodexSection } from "./settingsTypes";
-import { SETTINGS_SECTION_LABELS } from "./settingsViewConstants";
 import { SettingsSectionContainers } from "./sections/SettingsSectionContainers";
+import { useTranslation } from "react-i18next";
 
 export type SettingsViewProps = {
   workspaceGroups: WorkspaceGroup[];
@@ -99,6 +99,7 @@ export function SettingsView({
   onRemoveDictationModel,
   initialSection,
 }: SettingsViewProps) {
+  const { t } = useTranslation("settings");
   const {
     activeSection,
     showMobileDetail,
@@ -140,7 +141,7 @@ export function SettingsView({
 
   useSettingsViewCloseShortcuts(onClose);
 
-  const activeSectionLabel = SETTINGS_SECTION_LABELS[activeSection];
+  const activeSectionLabel = t(`sections.${activeSection}` as any);
   const settingsBodyClassName = `settings-body${
     useMobileMasterDetail ? " settings-body-mobile-master-detail" : ""
   }${useMobileMasterDetail && showMobileDetail ? " is-detail-visible" : ""}`;
@@ -154,13 +155,13 @@ export function SettingsView({
     >
       <div className="settings-titlebar">
         <div className="settings-title" id="settings-modal-title">
-          Settings
+          {t("title")}
         </div>
         <button
           type="button"
           className="ghost icon-button settings-close"
           onClick={onClose}
-          aria-label="Close settings"
+          aria-label={t("close")}
         >
           <X aria-hidden />
         </button>
@@ -186,7 +187,7 @@ export function SettingsView({
                   aria-label="Back to settings sections"
                 >
                   <ChevronLeft aria-hidden />
-                  Sections
+                  {t("back_to_sections")}
                 </button>
                 <div className="settings-mobile-detail-title">{activeSectionLabel}</div>
               </div>

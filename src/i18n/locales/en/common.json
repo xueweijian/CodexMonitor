@@ -2,5 +2,18 @@
   "confirm": "Confirm",
   "cancel": "Cancel",
   "save": "Save",
-  "error": "Error"
+  "error": "Error",
+  "installer": {
+    "title": "Codex CLI Installation Required",
+    "description": "Codex CLI is a core component required for CodexMonitor to run. The app could not find it in your system. Please choose one of the following methods to install or configure it:",
+    "auto_install": "One-click Auto Install (Recommended)",
+    "manual_path": "Manually Specify Codex CLI Path",
+    "view_docs": "View Installation Guide",
+    "installing": "Downloading and installing Codex CLI...",
+    "success_title": "Installation Completed!",
+    "success_desc": "Launching the application for you...",
+    "failed_title": "Installation Failed",
+    "retry": "Retry",
+    "select_file_title": "Select Codex CLI Executable"
+  }
 }

@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use std::collections::HashMap;
 use std::sync::Mutex;
 
@@ -69,6 +70,7 @@ pub(crate) fn set_tray_recent_threads<R: tauri::Runtime>(
     state: tauri::State<'_, TrayState>,
     entries: Vec<TrayRecentThreadEntry>,
 ) -> Result<(), String> {
+    let _ = app;
     let normalized = normalize_tray_threads(entries);
     {
         let mut tray_threads = state
@@ -93,6 +95,7 @@ pub(crate) fn set_tray_session_usage<R: tauri::Runtime>(
     state: tauri::State<'_, TrayState>,
     usage: Option<TraySessionUsage>,
 ) -> Result<(), String> {
+    let _ = app;
     let normalized = normalize_session_usage(usage);
     {
         let mut session_usage = state

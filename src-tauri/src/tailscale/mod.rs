@@ -27,6 +27,7 @@ use self::core as tailscale_core;
 const UNSUPPORTED_MESSAGE: &str = "Tailscale integration is only available on desktop.";
 
 fn apply_tailscale_command_env(command: &mut tokio::process::Command) {
+    let _ = command;
     #[cfg(target_os = "macos")]
     {
         // The app-bundled Tailscale binary can fail with CLIError 3 when TERM is missing

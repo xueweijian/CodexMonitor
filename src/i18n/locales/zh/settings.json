@@ -2,5 +2,40 @@
   "title": "设置",
   "language": "语言 / Language",
   "language_zh": "简体中文",
-  "language_en": "English"
+  "language_en": "English",
+  "close": "关闭设置",
+  "back_to_sections": "返回",
+  "sections": {
+    "projects": "项目",
+    "environments": "环境",
+    "display": "显示与声音",
+    "composer": "编辑器 / Composer",
+    "dictation": "听写 / Dictation",
+    "shortcuts": "快捷键",
+    "open-apps": "打开方式",
+    "git": "Git",
+    "server": "服务器",
+    "agents": "智能体 / Agents",
+    "codex": "Codex",
+    "features": "特性 / Features",
+    "about": "关于"
+  },
+  "provider": {
+    "enable": "启用第三方模型提供商",
+    "name": "提供商名称",
+    "name_placeholder": "例如 DeepSeek",
+    "base_url": "API 基础 URL",
+    "base_url_placeholder": "https://api.deepseek.com/v1",
+    "api_key": "API 密钥",
+    "api_key_placeholder": "sk-...",
+    "model": "默认模型",
+    "model_placeholder": "例如 deepseek-chat",
+    "protocol": "协议模式",
+    "protocol_chat": "Chat Completions API",
+    "protocol_responses": "Responses API",
+    "test_connection": "测试连接",
+    "testing": "正在测试...",
+    "success": "连接成功",
+    "failed": "连接失败"
+  }
 }

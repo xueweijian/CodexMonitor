@@ -1,4 +1,4 @@
-use crate::types::{ThirdPartyProvider, WireApiMode};
+use crate::types::ThirdPartyProvider;
 use std::sync::Arc;
 
 pub mod translate;
@@ -13,7 +13,7 @@ pub fn start_chat_bridge(provider: ThirdPartyProvider) -> Result<u16, String> {
 
     std::thread::spawn(move || {
         let client = reqwest::Client::new();
-        for mut request in server.incoming_requests() {
+        for request in server.incoming_requests() {
             let provider = provider.clone();
             let client = client.clone();
             let handle = handle.clone();

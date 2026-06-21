@@ -38,6 +38,7 @@ pub(crate) struct AppState {
     pub(crate) storage_path: PathBuf,
     pub(crate) settings_path: PathBuf,
     pub(crate) app_settings: Mutex<AppSettings>,
+    #[allow(dead_code)]
     pub(crate) dictation: Mutex<DictationState>,
     pub(crate) codex_login_cancels: Mutex<HashMap<String, CodexLoginCancelState>>,
     pub(crate) tcp_daemon: Mutex<TcpDaemonRuntime>,

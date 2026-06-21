@@ -70,6 +70,7 @@ fn app_launch_strategy(app: &str) -> Option<LineAwareLaunchStrategy> {
     None
 }
 
+#[allow(dead_code)]
 fn app_cli_command(app: &str) -> Option<&'static str> {
     let normalized = normalize_app_identifier(app);
     if normalized.contains("visual studio code insiders") {
@@ -103,6 +104,7 @@ fn normalize_app_identifier(app: &str) -> String {
         .join(" ")
 }
 
+#[allow(dead_code)]
 fn find_executable_in_path(program: &str) -> Option<PathBuf> {
     let trimmed = program.trim();
     if trimmed.is_empty() {
