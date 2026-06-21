@@ -1,4 +1,15 @@
 use serde_json::{json, Value};
+use std::collections::HashMap;
+
+#[derive(Debug, Clone)]
+pub struct ToolCallState {
+    pub id: String,
+    pub name: String,
+    pub args_buf: String,
+    pub item_id: String,
+    pub output_index: u32,
+    pub added: bool,
+}
 
 pub fn responses_input_to_chat_messages(input: &Value, instructions: Option<&str>) -> Value {
     let mut messages = Vec::new();
@@ -88,7 +99,14 @@ pub fn responses_input_to_chat_messages(input: &Value, instructions: Option<&str
     json!(messages)
 }
 
-pub fn chat_delta_to_responses_sse(delta: &Value, is_first: &mut bool, text_acc: &mut String, model: &str) -> String {
+pub fn chat_delta_to_responses_sse(
+    delta: &Value, 
+    is_first: &mut bool, 
+    text_acc: &mut String, 
+    model: &str,
+    tool_calls: &mut HashMap<usize, ToolCallState>,
+    next_output_index: &mut u32
+) -> String {
     let mut out = String::new();
     if *is_first {
         *is_first = false;
@@ -134,6 +152,63 @@ pub fn chat_delta_to_responses_sse(delta: &Value, is_first: &mut bool, text_acc:
                         out.push_str(&format!("event: response.output_text.delta\ndata: {}\n\n", delta_ev));
                     }
                 }
+                
+                if let Some(tc_arr) = delta_obj.get("tool_calls").and_then(|tc| tc.as_array()) {
+                    for tc in tc_arr {
+                        let idx = tc.get("index").and_then(|i| i.as_u64()).unwrap_or(0) as usize;
+                        let entry = tool_calls.entry(idx).or_insert_with(|| ToolCallState {
+                            id: tc.get("id").and_then(|i| i.as_str()).unwrap_or("").to_string(),
+                            name: tc.get("function").and_then(|f| f.get("name")).and_then(|n| n.as_str()).unwrap_or("").to_string(),
+                            args_buf: String::new(),
+                            item_id: format!("fc_{}", uuid::Uuid::new_v4().to_string().replace("-", "")),
+                            output_index: *next_output_index,
+                            added: false,
+                        });
+                        
+                        if entry.output_index == *next_output_index {
+                            *next_output_index += 1;
+                        }
+                        
+                        if let Some(id) = tc.get("id").and_then(|i| i.as_str()) {
+                            if entry.id != id {
+                                entry.id = id.to_string();
+                            }
+                        }
+                        if let Some(name) = tc.get("function").and_then(|f| f.get("name")).and_then(|n| n.as_str()) {
+                            entry.name = name.to_string();
+                        }
+                        
+                        let announce = !entry.added && !entry.name.is_empty();
+                        if announce {
+                            let item_added = json!({
+                                "type": "response.output_item.added",
+                                "output_index": entry.output_index,
+                                "item": {
+                                    "id": entry.item_id,
+                                    "type": "function_call",
+                                    "call_id": entry.id,
+                                    "name": entry.name,
+                                    "arguments": ""
+                                }
+                            });
+                            out.push_str(&format!("event: response.output_item.added\ndata: {}\n\n", item_added));
+                            entry.added = true;
+                        }
+                        
+                        if let Some(args) = tc.get("function").and_then(|f| f.get("arguments")).and_then(|a| a.as_str()) {
+                            entry.args_buf.push_str(args);
+                            if entry.added {
+                                let arg_delta = json!({
+                                    "type": "response.function_call_arguments.delta",
+                                    "item_id": entry.item_id,
+                                    "output_index": entry.output_index,
+                                    "delta": args
+                                });
+                                out.push_str(&format!("event: response.function_call_arguments.delta\ndata: {}\n\n", arg_delta));
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -141,9 +216,11 @@ pub fn chat_delta_to_responses_sse(delta: &Value, is_first: &mut bool, text_acc:
 }
 
 #[allow(dead_code)]
-pub fn build_responses_completed_events(text_acc: &str, model: &str) -> String {
+pub fn build_responses_completed_events(text_acc: &str, model: &str, tool_calls: &mut HashMap<usize, ToolCallState>) -> String {
     let mut out = String::new();
-    let item = json!({
+    let mut output_arr = Vec::new();
+
+    let msg_item = json!({
         "id": "item_1",
         "type": "message",
         "role": "assistant",
@@ -156,19 +233,71 @@ pub fn build_responses_completed_events(text_acc: &str, model: &str) -> String {
         ]
     });
     
-    let item_done = json!({
+    // Sort tool calls by index to ensure deterministic order
+    let mut tc_vec: Vec<_> = tool_calls.values_mut().collect();
+    tc_vec.sort_by_key(|tc| tc.output_index);
+
+    for tc in tc_vec {
+        if !tc.added && !tc.name.is_empty() {
+            let item_added = json!({
+                "type": "response.output_item.added",
+                "output_index": tc.output_index,
+                "item": {
+                    "id": tc.item_id,
+                    "type": "function_call",
+                    "call_id": tc.id,
+                    "name": tc.name,
+                    "arguments": ""
+                }
+            });
+            out.push_str(&format!("event: response.output_item.added\ndata: {}\n\n", item_added));
+            tc.added = true;
+            if !tc.args_buf.is_empty() {
+                let arg_delta = json!({
+                    "type": "response.function_call_arguments.delta",
+                    "item_id": tc.item_id,
+                    "output_index": tc.output_index,
+                    "delta": tc.args_buf
+                });
+                out.push_str(&format!("event: response.function_call_arguments.delta\ndata: {}\n\n", arg_delta));
+            }
+        }
+
+        let tc_item = json!({
+            "id": tc.item_id,
+            "type": "function_call",
+            "call_id": tc.id,
+            "name": tc.name,
+            "arguments": tc.args_buf
+        });
+
+        let item_done = json!({
+            "type": "response.output_item.done",
+            "output_index": tc.output_index,
+            "item": tc_item.clone()
+        });
+        out.push_str(&format!("event: response.output_item.done\ndata: {}\n\n", item_done));
+        
+        output_arr.push(tc_item);
+    }
+    
+    // Message item must be added to output array as well, typically at the beginning or end depending on standard,
+    // usually message first.
+    output_arr.insert(0, msg_item.clone());
+
+    let msg_item_done = json!({
         "type": "response.output_item.done",
         "output_index": 0,
-        "item": item
+        "item": msg_item
     });
-    out.push_str(&format!("event: response.output_item.done\ndata: {}\n\n", item_done));
+    out.push_str(&format!("event: response.output_item.done\ndata: {}\n\n", msg_item_done));
     
     let response = json!({
         "id": "resp_1",
         "object": "response",
         "status": "completed",
         "model": model,
-        "output": [item]
+        "output": output_arr
     });
     let completed = json!({
         "type": "response.completed",
@@ -257,7 +386,9 @@ mod tests {
         let delta = json!({});
         let mut is_first = true;
         let mut text_acc = String::new();
-        let output = chat_delta_to_responses_sse(&delta, &mut is_first, &mut text_acc, "test-model");
+        let mut tool_calls = HashMap::new();
+        let mut next_output_index = 1;
+        let output = chat_delta_to_responses_sse(&delta, &mut is_first, &mut text_acc, "test-model", &mut tool_calls, &mut next_output_index);
         assert!(output.contains("response.created"));
         assert!(output.contains("response.output_item.added"));
     }

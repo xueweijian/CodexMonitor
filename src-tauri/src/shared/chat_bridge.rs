@@ -106,6 +106,10 @@ pub fn start_chat_bridge(provider: ThirdPartyProvider) -> Result<u16, String> {
                             let mut buffer = String::new();
                             let mut completed_sent = false;
                             let mut text_acc = String::new();
+                            let mut tool_calls = std::collections::HashMap::new();
+                            let mut next_output_index = 1;
+                            
+                            println!("[chat_bridge] Upstream connection established. Streaming response...");
                             
                             while let Ok(chunk_opt) = res.chunk().await {
                                 if let Some(chunk_res) = chunk_opt {
@@ -122,12 +126,13 @@ pub fn start_chat_bridge(provider: ThirdPartyProvider) -> Result<u16, String> {
                                             if data_str == "[DONE]" {
                                                 if !completed_sent {
                                                     completed_sent = true;
-                                                    let end_events = translate::build_responses_completed_events(&text_acc, &provider_model);
+                                                    let end_events = translate::build_responses_completed_events(&text_acc, &provider_model, &mut tool_calls);
                                                     let _ = tx.send(end_events.into_bytes());
+                                                    println!("[chat_bridge] Streaming completed normally. [DONE]");
                                                 }
                                                 break;
                                             } else if let Ok(parsed_delta) = serde_json::from_str::<Value>(data_str) {
-                                                let mapped = translate::chat_delta_to_responses_sse(&parsed_delta, &mut is_first, &mut text_acc, &provider_model);
+                                                let mapped = translate::chat_delta_to_responses_sse(&parsed_delta, &mut is_first, &mut text_acc, &provider_model, &mut tool_calls, &mut next_output_index);
                                                 if !mapped.is_empty() {
                                                     if tx.send(mapped.into_bytes()).is_err() {
                                                         break;
@@ -142,10 +147,12 @@ pub fn start_chat_bridge(provider: ThirdPartyProvider) -> Result<u16, String> {
                             }
                             
                             if !completed_sent {
-                                let end_events = translate::build_responses_completed_events(&text_acc, &provider_model);
+                                let end_events = translate::build_responses_completed_events(&text_acc, &provider_model, &mut tool_calls);
                                 let _ = tx.send(end_events.into_bytes());
+                                println!("[chat_bridge] Streaming finished abruptly without [DONE] tag.");
                             }
                         } else {
+                            println!("[chat_bridge] Upstream connection failed!");
                             let end_events = translate::build_responses_failed_event("upstream connection failed", &provider_model);
                             let _ = tx.send(end_events.into_bytes());
                         }
