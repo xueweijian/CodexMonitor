@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation, Trans } from "react-i18next";
 import type { AppSettings } from "@/types";
 import {
   getAppBuildType,
@@ -35,6 +36,7 @@ export function SettingsAboutSection({
   appSettings,
   onToggleAutomaticAppUpdateChecks,
 }: SettingsAboutSectionProps) {
+  const { t } = useTranslation("settings");
   const [appBuildType, setAppBuildType] = useState<AppBuildType | "unknown">("unknown");
   const [updaterEnabled, setUpdaterEnabled] = useState(false);
   const { state: updaterState, checkForUpdates, startUpdate } = useUpdater({
@@ -86,33 +88,45 @@ export function SettingsAboutSection({
   const buildDateValue = __APP_BUILD_DATE__.trim();
   const parsedBuildDate = Date.parse(buildDateValue);
   const buildDateLabel = Number.isNaN(parsedBuildDate)
-    ? buildDateValue || "unknown"
+    ? buildDateValue || t("about.unknown")
     : new Date(parsedBuildDate).toLocaleString();
 
+  const unknownLabel = t("about.unknown");
+
   return (
-    <SettingsSection title="About" subtitle="App version, build metadata, and update controls.">
+    <SettingsSection title={t("about.title")} subtitle={t("about.subtitle")}>
       <div className="settings-field">
         <div className="settings-help">
-          Version: <code>{__APP_VERSION__}</code>
+          <Trans t={t} i18nKey="about.version">
+            Version: <code>{__APP_VERSION__}</code>
+          </Trans>
         </div>
         <div className="settings-help">
-          Build type: <code>{appBuildType}</code>
+          <Trans t={t} i18nKey="about.build_type">
+            Build type: <code>{appBuildType === "unknown" ? unknownLabel : appBuildType}</code>
+          </Trans>
         </div>
         <div className="settings-help">
-          Branch: <code>{__APP_GIT_BRANCH__ || "unknown"}</code>
+          <Trans t={t} i18nKey="about.branch">
+            Branch: <code>{__APP_GIT_BRANCH__ || unknownLabel}</code>
+          </Trans>
         </div>
         <div className="settings-help">
-          Commit: <code>{__APP_COMMIT_HASH__ || "unknown"}</code>
+          <Trans t={t} i18nKey="about.commit">
+            Commit: <code>{__APP_COMMIT_HASH__ || unknownLabel}</code>
+          </Trans>
         </div>
         <div className="settings-help">
-          Build date: <code>{buildDateLabel}</code>
+          <Trans t={t} i18nKey="about.build_date">
+            Build date: <code>{buildDateLabel}</code>
+          </Trans>
         </div>
       </div>
       <div className="settings-field">
-        <div className="settings-label">App Updates</div>
+        <div className="settings-label">{t("about.app_updates")}</div>
         <SettingsToggleRow
-          title="Automatically check for app updates"
-          subtitle="When enabled, CodexMonitor checks for new app versions on launch."
+          title={t("about.auto_check")}
+          subtitle={t("about.auto_check_sub")}
         >
           <SettingsToggleSwitch
             pressed={appSettings.automaticAppUpdateChecksEnabled}
@@ -122,17 +136,19 @@ export function SettingsAboutSection({
           />
         </SettingsToggleRow>
         <div className="settings-help">
-          Currently running version <code>{__APP_VERSION__}</code>
+          <Trans t={t} i18nKey="about.running_version" values={{ version: __APP_VERSION__ }}>
+            Currently running version <code>{__APP_VERSION__}</code>
+          </Trans>
         </div>
         {!updaterEnabled && (
           <div className="settings-help">
-            Updates are unavailable in this runtime.
+            {t("about.unavailable")}
           </div>
         )}
 
         {updaterState.stage === "error" && (
           <div className="settings-help ds-text-danger">
-            Update failed: {updaterState.error}
+            {t("about.update_failed", { error: updaterState.error })}
           </div>
         )}
 
@@ -142,23 +158,26 @@ export function SettingsAboutSection({
           <div className="settings-help">
             {updaterState.stage === "downloading" ? (
               <>
-                Downloading update...{" "}
-                {updaterState.progress?.totalBytes
-                  ? `${Math.round((updaterState.progress.downloadedBytes / updaterState.progress.totalBytes) * 100)}%`
-                  : formatBytes(updaterState.progress?.downloadedBytes ?? 0)}
+                {t("about.downloading", {
+                  progress: updaterState.progress?.totalBytes
+                    ? `${Math.round((updaterState.progress.downloadedBytes / updaterState.progress.totalBytes) * 100)}%`
+                    : formatBytes(updaterState.progress?.downloadedBytes ?? 0),
+                })}
               </>
             ) : updaterState.stage === "installing" ? (
-              "Installing update..."
+              t("about.installing")
             ) : (
-              "Restarting..."
+              t("about.restarting")
             )}
           </div>
         ) : updaterState.stage === "available" ? (
           <div className="settings-help">
-            Version <code>{updaterState.version}</code> is available.
+            <Trans t={t} i18nKey="about.available" values={{ version: updaterState.version }}>
+              Version <code>{updaterState.version}</code> is available.
+            </Trans>
           </div>
         ) : updaterState.stage === "latest" ? (
-          <div className="settings-help">You are on the latest version.</div>
+          <div className="settings-help">{t("about.latest")}</div>
         ) : null}
 
         <div className="settings-controls">
@@ -169,7 +188,7 @@ export function SettingsAboutSection({
               disabled={!updaterEnabled}
               onClick={() => void startUpdate()}
             >
-              Download & Install
+              {t("about.download_install")}
             </button>
           ) : (
             <button
@@ -184,7 +203,7 @@ export function SettingsAboutSection({
               }
               onClick={() => void checkForUpdates({ announceNoUpdate: true })}
             >
-              {updaterState.stage === "checking" ? "Checking..." : "Check for updates"}
+              {updaterState.stage === "checking" ? t("about.checking") : t("about.check_updates")}
             </button>
           )}
         </div>

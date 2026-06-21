@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import type { Dispatch, SetStateAction } from "react";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import type { AppSettings } from "../../../types";
@@ -42,8 +43,16 @@ export function useUiScaleShortcuts({
     return isMacPlatform() ? "Cmd" : "Ctrl";
   }, []);
 
-  const scaleShortcutTitle = `${scaleShortcutLabel}+ and ${scaleShortcutLabel}-, ${scaleShortcutLabel}+0 to reset.`;
-  const scaleShortcutText = `Shortcuts: ${scaleShortcutLabel}+ and ${scaleShortcutLabel}-, ${scaleShortcutLabel}+0 to reset.`;
+  const { t } = useTranslation("settings");
+
+  const scaleShortcutTitle = t("display.scale_shortcut_title", {
+    label: scaleShortcutLabel,
+    defaultValue: `${scaleShortcutLabel}+ and ${scaleShortcutLabel}-, ${scaleShortcutLabel}+0 to reset.`
+  });
+  const scaleShortcutText = t("display.scale_shortcut_text", {
+    label: scaleShortcutLabel,
+    defaultValue: `Shortcuts: ${scaleShortcutLabel}+ and ${scaleShortcutLabel}-, ${scaleShortcutLabel}+0 to reset.`
+  });
 
   const saveQueueRef = useRef(Promise.resolve());
   const queueSaveSettings = useCallback(

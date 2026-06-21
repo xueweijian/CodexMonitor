@@ -119,25 +119,36 @@ type EditorContentMetaInput = {
   isDirty: boolean;
 };
 
-export const buildEditorContentMeta = ({
-  isLoading,
-  isSaving,
-  exists,
-  truncated,
-  isDirty,
-}: EditorContentMetaInput) => {
-  const status = isLoading ? "Loading…" : isSaving ? "Saving…" : exists ? "" : "Not found";
+export const buildEditorContentMeta = (
+  {
+    isLoading,
+    isSaving,
+    exists,
+    truncated,
+    isDirty,
+  }: EditorContentMetaInput,
+  t?: any,
+) => {
+  const status = isLoading
+    ? (t ? t("codex.loading") : "Loading…")
+    : isSaving
+    ? (t ? t("codex.saving") : "Saving…")
+    : exists
+    ? ""
+    : (t ? t("codex.not_found") : "Not found");
   const metaParts: string[] = [];
   if (status) {
     metaParts.push(status);
   }
   if (truncated) {
-    metaParts.push("Truncated");
+    metaParts.push(t ? t("codex.truncated") : "Truncated");
   }
 
   return {
     meta: metaParts.join(" · "),
-    saveLabel: exists ? "Save" : "Create",
+    saveLabel: exists
+      ? (t ? t("codex.btn_save") : "Save")
+      : (t ? t("codex.btn_create") : "Create"),
     saveDisabled: isLoading || isSaving || !isDirty,
     refreshDisabled: isLoading || isSaving,
   };

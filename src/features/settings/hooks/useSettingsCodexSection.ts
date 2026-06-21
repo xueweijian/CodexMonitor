@@ -12,6 +12,7 @@ import { useGlobalCodexConfigToml } from "./useGlobalCodexConfigToml";
 import { useSettingsDefaultModels } from "./useSettingsDefaultModels";
 import { buildEditorContentMeta } from "@settings/components/settingsViewHelpers";
 import { normalizeCodexArgsInput } from "@/utils/codexArgsInput";
+import { useTranslation } from "react-i18next";
 
 type UseSettingsCodexSectionArgs = {
   appSettings: AppSettings;
@@ -82,6 +83,7 @@ export const useSettingsCodexSection = ({
   onRunDoctor,
   onRunCodexUpdate,
 }: UseSettingsCodexSectionArgs): SettingsCodexSectionProps => {
+  const { t } = useTranslation("settings");
   const [codexPathDraft, setCodexPathDraft] = useState(appSettings.codexBin ?? "");
   const [codexArgsDraft, setCodexArgsDraft] = useState(appSettings.codexArgs ?? "");
   const [isSavingSettings, setIsSavingSettings] = useState(false);
@@ -134,7 +136,7 @@ export const useSettingsCodexSection = ({
     exists: globalAgentsExists,
     truncated: globalAgentsTruncated,
     isDirty: globalAgentsDirty,
-  });
+  }, t);
 
   const globalConfigEditorMeta = buildEditorContentMeta({
     isLoading: globalConfigLoading,
@@ -142,7 +144,7 @@ export const useSettingsCodexSection = ({
     exists: globalConfigExists,
     truncated: globalConfigTruncated,
     isDirty: globalConfigDirty,
-  });
+  }, t);
 
   useEffect(() => {
     setCodexPathDraft(appSettings.codexBin ?? "");

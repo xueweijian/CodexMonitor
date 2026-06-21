@@ -1,3 +1,4 @@
+import { useTranslation, Trans } from "react-i18next";
 import type { AppSettings, ModelOption } from "@/types";
 import {
   SettingsSection,
@@ -28,14 +29,16 @@ export function SettingsGitSection({
   onSaveCommitMessagePrompt,
   onResetCommitMessagePrompt,
 }: SettingsGitSectionProps) {
+  const { t } = useTranslation("settings");
+
   return (
     <SettingsSection
-      title="Git"
-      subtitle="Manage how diffs are loaded in the Git sidebar."
+      title={t("git.title")}
+      subtitle={t("git.subtitle")}
     >
       <SettingsToggleRow
-        title="Preload git diffs"
-        subtitle="Make viewing git diff faster."
+        title={t("git.preload")}
+        subtitle={t("git.preload_sub")}
       >
         <SettingsToggleSwitch
           pressed={appSettings.preloadGitDiffs}
@@ -48,8 +51,8 @@ export function SettingsGitSection({
         />
       </SettingsToggleRow>
       <SettingsToggleRow
-        title="Ignore whitespace changes"
-        subtitle="Hides whitespace-only changes in local and commit diffs."
+        title={t("git.ignore_whitespace")}
+        subtitle={t("git.ignore_whitespace_sub")}
       >
         <SettingsToggleSwitch
           pressed={appSettings.gitDiffIgnoreWhitespaceChanges}
@@ -62,10 +65,12 @@ export function SettingsGitSection({
         />
       </SettingsToggleRow>
       <div className="settings-field">
-        <div className="settings-field-label">Commit message prompt</div>
+        <div className="settings-field-label">{t("git.commit_prompt")}</div>
         <div className="settings-help">
-          Used when generating commit messages. Include <code>{"{diff}"}</code> to insert the
-          git diff.
+          <Trans t={t} i18nKey="git.commit_prompt_sub">
+            Used when generating commit messages. Include <code>{"{diff}"}</code> to insert the
+            git diff.
+          </Trans>
         </div>
         <textarea
           className="settings-agents-textarea"
@@ -83,7 +88,7 @@ export function SettingsGitSection({
             }}
             disabled={commitMessagePromptSaving || !commitMessagePromptDirty}
           >
-            Reset
+            {t("git.reset")}
           </button>
           <button
             type="button"
@@ -93,18 +98,17 @@ export function SettingsGitSection({
             }}
             disabled={commitMessagePromptSaving || !commitMessagePromptDirty}
           >
-            {commitMessagePromptSaving ? "Saving..." : "Save"}
+            {commitMessagePromptSaving ? t("git.saving") : t("git.save")}
           </button>
         </div>
       </div>
       {models.length > 0 && (
         <div className="settings-field">
           <label className="settings-field-label" htmlFor="commit-message-model-select">
-            Commit message model
+            {t("git.commit_model")}
           </label>
           <div className="settings-help">
-            The model used when generating commit messages. Leave on default to use the
-            workspace model.
+            {t("git.commit_model_sub")}
           </div>
           <select
             id="commit-message-model-select"
@@ -118,7 +122,7 @@ export function SettingsGitSection({
               });
             }}
           >
-            <option value="">Default</option>
+            <option value="">{t("git.default_option")}</option>
             {models.map((model) => (
               <option key={model.id} value={model.model}>
                 {model.displayName?.trim() || model.model}

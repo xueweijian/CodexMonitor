@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { Dispatch, SetStateAction } from "react";
 import { ask, open } from "@tauri-apps/plugin-dialog";
 import type { AppSettings, WorkspaceGroup, WorkspaceInfo } from "@/types";
@@ -66,6 +67,7 @@ export const useSettingsProjectsSection = ({
   const [groupDrafts, setGroupDrafts] = useState<Record<string, string>>({});
   const [newGroupName, setNewGroupName] = useState("");
   const [groupError, setGroupError] = useState<string | null>(null);
+  const { t } = useTranslation("settings");
 
   useEffect(() => {
     setGroupDrafts((prev) => {
@@ -151,14 +153,24 @@ export const useSettingsProjectsSection = ({
       groupedWorkspaces.find((entry) => entry.id === group.id)?.workspaces ?? [];
     const detail =
       groupProjects.length > 0
-        ? `\n\nProjects in this group will move to "${ungroupedLabel}".`
+        ? t("projects.delete_group_detail", {
+            ungroupedLabel,
+            defaultValue: `\n\nProjects in this group will move to "${ungroupedLabel}".`
+          })
         : "";
-    const confirmed = await ask(`Delete "${group.name}"?${detail}`, {
-      title: "Delete Group",
-      kind: "warning",
-      okLabel: "Delete",
-      cancelLabel: "Cancel",
-    });
+    const confirmed = await ask(
+      t("projects.delete_group_message", {
+        name: group.name,
+        detail,
+        defaultValue: `Delete "${group.name}"?${detail}`
+      }),
+      {
+        title: t("projects.delete_group_title", { defaultValue: "Delete Group" }),
+        kind: "warning",
+        okLabel: t("projects.delete_group_ok", { defaultValue: "Delete" }),
+        cancelLabel: t("projects.delete_group_cancel", { defaultValue: "Cancel" }),
+      }
+    );
     if (!confirmed) {
       return;
     }

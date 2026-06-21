@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type {
   AppSettings,
   DebugEntry,
@@ -132,6 +133,20 @@ export function useWorkspaces(options: UseWorkspacesOptions = {}): UseWorkspaces
     [workspaceGroups, workspaces],
   );
 
+  const { t } = useTranslation("settings");
+
+  const localizedGroupedWorkspaces = useMemo(() => {
+    return groupedWorkspaces.map((group) => {
+      if (group.id === null) {
+        return {
+          ...group,
+          name: t("projects.ungrouped", { defaultValue: group.name }),
+        };
+      }
+      return group;
+    });
+  }, [groupedWorkspaces, t]);
+
   const getWorkspaceGroupName = useCallback(
     (workspaceId: string) =>
       getWorkspaceGroupNameById(workspaceId, workspaceById, workspaceGroupById),
@@ -169,9 +184,9 @@ export function useWorkspaces(options: UseWorkspacesOptions = {}): UseWorkspaces
   return {
     workspaces,
     workspaceGroups,
-    groupedWorkspaces,
+    groupedWorkspaces: localizedGroupedWorkspaces,
     getWorkspaceGroupName,
-    ungroupedLabel: RESERVED_GROUP_NAME,
+    ungroupedLabel: t("projects.ungrouped", { defaultValue: RESERVED_GROUP_NAME }),
     activeWorkspace,
     activeWorkspaceId,
     setActiveWorkspaceId,

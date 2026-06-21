@@ -92,7 +92,7 @@ import enSettings from "../i18n/locales/en/settings.json";
 import enCommon from "../i18n/locales/en/common.json";
 
 vi.mock("react-i18next", () => {
-  const getTranslation = (key: string, ns?: string) => {
+  const getTranslation = (key: string, ns?: string, options?: any) => {
     let dict: any = ns === "common" ? enCommon : enSettings;
     let cleanKey = key;
     if (key.includes(":")) {
@@ -108,12 +108,18 @@ vi.mock("react-i18next", () => {
         return key;
       }
     }
-    return typeof current === "string" ? current : key;
+    let val = typeof current === "string" ? current : key;
+    if (options && typeof options === "object") {
+      Object.keys(options).forEach((optKey) => {
+        val = val.replace(new RegExp(`{{\\s*${optKey}\\s*}}`, "g"), options[optKey]);
+      });
+    }
+    return val;
   };
 
   return {
     useTranslation: (ns?: string) => ({
-      t: (key: string) => getTranslation(key, ns),
+      t: (key: string, options?: any) => getTranslation(key, ns, options),
       i18n: {
         changeLanguage: vi.fn().mockResolvedValue(undefined),
         language: "en",
@@ -124,6 +130,7 @@ vi.mock("react-i18next", () => {
       init: () => {},
     },
     I18nextProvider: ({ children }: { children: React.ReactNode }) => children,
+    Trans: ({ children }: { children: React.ReactNode }) => children,
   };
 });
 
