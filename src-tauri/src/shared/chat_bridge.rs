@@ -52,14 +52,31 @@ pub fn start_chat_bridge(provider: ThirdPartyProvider) -> Result<u16, String> {
                     
                     let messages = translate::responses_input_to_chat_messages(input, instructions);
                     
-                    let payload = json!({
-                        "model": provider.model,
-                        "messages": messages,
-                        "stream": true
-                    });
+                    let mut payload = serde_json::Map::new();
+                    payload.insert("model".to_string(), json!(provider.model));
+                    payload.insert("messages".to_string(), messages);
+                    payload.insert("stream".to_string(), json!(true));
                     
+                    if let Some(t) = parsed.get("temperature") {
+                        payload.insert("temperature".to_string(), t.clone());
+                    }
+                    if let Some(tp) = parsed.get("top_p") {
+                        payload.insert("top_p".to_string(), tp.clone());
+                    }
+                    if let Some(mt) = parsed.get("max_output_tokens").or_else(|| parsed.get("max_tokens")) {
+                        payload.insert("max_tokens".to_string(), mt.clone());
+                    }
+                    
+                    if let Some(chat_tools) = translate::responses_tools_to_chat_tools(parsed.get("tools")) {
+                        payload.insert("tools".to_string(), chat_tools);
+                        if let Some(tc) = parsed.get("tool_choice") {
+                            payload.insert("tool_choice".to_string(), tc.clone());
+                        }
+                    }
+                    
+                    let payload_value = Value::Object(payload);
                     let target = format!("{}/chat/completions", provider.base_url);
-                    let body_str = serde_json::to_string(&payload).unwrap_or_default();
+                    let body_str = serde_json::to_string(&payload_value).unwrap_or_default();
                     let mut req = client.post(&target)
                         .header("Content-Type", "application/json")
                         .body(body_str);
@@ -75,7 +92,12 @@ pub fn start_chat_bridge(provider: ThirdPartyProvider) -> Result<u16, String> {
                     handle.spawn(async move {
                         if let Ok(mut res) = req.send().await {
                             if !res.status().is_success() {
-                                let error_msg = format!("upstream returned HTTP {}", res.status());
+                                let status = res.status();
+                                let mut error_body = String::new();
+                                while let Ok(Some(chunk)) = res.chunk().await {
+                                    error_body.push_str(&String::from_utf8_lossy(&chunk));
+                                }
+                                let error_msg = format!("upstream returned HTTP {}: {}", status, error_body);
                                 let end_events = translate::build_responses_failed_event(&error_msg, &provider_model);
                                 let _ = tx.send(end_events.into_bytes());
                                 return;

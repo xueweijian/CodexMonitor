@@ -1,6 +1,5 @@
 use serde_json::{json, Value};
 
-#[allow(dead_code)]
 pub fn responses_input_to_chat_messages(input: &Value, instructions: Option<&str>) -> Value {
     let mut messages = Vec::new();
 
@@ -15,24 +14,74 @@ pub fn responses_input_to_chat_messages(input: &Value, instructions: Option<&str
 
     if let Some(arr) = input.as_array() {
         for item in arr {
-            let role = item.get("role").and_then(|r| r.as_str()).unwrap_or("user");
-            
-            // Extract text from content array
-            let mut content_str = String::new();
-            if let Some(content_arr) = item.get("content").and_then(|c| c.as_array()) {
-                for part in content_arr {
-                    if let Some(text) = part.get("text").and_then(|t| t.as_str()) {
-                        content_str.push_str(text);
+            let item_type = item.get("type").and_then(|t| t.as_str()).unwrap_or("");
+            if item_type == "message" || item.get("role").is_some() {
+                let raw_role = item.get("role").and_then(|r| r.as_str()).unwrap_or("user");
+                let role = if raw_role == "developer" { "system" } else { raw_role };
+                
+                let mut content_str = String::new();
+                if let Some(content_arr) = item.get("content").and_then(|c| c.as_array()) {
+                    for part in content_arr {
+                        if let Some(text) = part.get("text").and_then(|t| t.as_str()) {
+                            content_str.push_str(text);
+                        } else if let Some(content) = part.get("content").and_then(|t| t.as_str()) {
+                            content_str.push_str(content);
+                        }
+                    }
+                } else if let Some(content_str_direct) = item.get("content").and_then(|c| c.as_str()) {
+                    content_str.push_str(content_str_direct);
+                }
+
+                messages.push(json!({
+                    "role": role,
+                    "content": content_str
+                }));
+            } else if item_type == "function_call" {
+                let call_id = item.get("call_id").or_else(|| item.get("id")).and_then(|v| v.as_str()).unwrap_or("");
+                let name = item.get("name").and_then(|v| v.as_str()).unwrap_or("");
+                let arguments = item.get("arguments").and_then(|v| v.as_str()).unwrap_or("");
+                
+                messages.push(json!({
+                    "role": "assistant",
+                    "content": null,
+                    "tool_calls": [{
+                        "id": call_id,
+                        "type": "function",
+                        "function": {
+                            "name": name,
+                            "arguments": arguments
+                        }
+                    }]
+                }));
+            } else if item_type == "function_call_output" || item_type == "custom_tool_call_output" {
+                let call_id = item.get("call_id").and_then(|v| v.as_str()).unwrap_or("");
+                
+                let mut output_str = String::new();
+                if let Some(output) = item.get("output") {
+                    if let Some(s) = output.as_str() {
+                        output_str.push_str(s);
+                    } else if let Some(arr) = output.as_array() {
+                        for part in arr {
+                            if let Some(text) = part.get("text").and_then(|t| t.as_str()) {
+                                output_str.push_str(text);
+                                output_str.push('\n');
+                            } else if let Some(content) = part.get("content").and_then(|t| t.as_str()) {
+                                output_str.push_str(content);
+                                output_str.push('\n');
+                            }
+                        }
+                    } else {
+                        output_str = output.to_string();
                     }
                 }
-            } else if let Some(content_str_direct) = item.get("content").and_then(|c| c.as_str()) {
-                content_str.push_str(content_str_direct);
+                
+                messages.push(json!({
+                    "role": "tool",
+                    "tool_call_id": call_id,
+                    "content": output_str.trim_end()
+                }));
             }
-
-            messages.push(json!({
-                "role": role,
-                "content": content_str
-            }));
+            // Ignore "reasoning" and other types
         }
     }
 
@@ -154,8 +203,42 @@ pub fn build_responses_failed_event(error_msg: &str, model: &str) -> String {
 }
 
 #[allow(dead_code)]
-pub fn responses_tools_to_chat_tools(_tools: &Value) -> Value {
-    json!([])
+pub fn responses_tools_to_chat_tools(tools: Option<&Value>) -> Option<Value> {
+    if let Some(arr) = tools.and_then(|t| t.as_array()) {
+        if arr.is_empty() {
+            return None;
+        }
+        let mut chat_tools = Vec::new();
+        for t in arr {
+            if t.get("type").and_then(|v| v.as_str()) != Some("function") {
+                continue;
+            }
+            if let Some(func) = t.get("function") {
+                if func.get("name").is_some() {
+                    chat_tools.push(json!({
+                        "type": "function",
+                        "function": func
+                    }));
+                }
+            } else if let Some(name) = t.get("name").and_then(|v| v.as_str()) {
+                chat_tools.push(json!({
+                    "type": "function",
+                    "function": {
+                        "name": name,
+                        "description": t.get("description"),
+                        "parameters": t.get("parameters").or_else(|| t.get("input_schema")).unwrap_or(&json!({"type": "object"}))
+                    }
+                }));
+            }
+        }
+        if chat_tools.is_empty() {
+            None
+        } else {
+            Some(json!(chat_tools))
+        }
+    } else {
+        None
+    }
 }
 
 #[cfg(test)]
