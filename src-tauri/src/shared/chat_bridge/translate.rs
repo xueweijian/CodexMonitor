@@ -39,7 +39,7 @@ pub fn responses_input_to_chat_messages(input: &Value, instructions: Option<&str
     json!(messages)
 }
 
-pub fn chat_delta_to_responses_sse(delta: &Value, is_first: &mut bool, text_acc: &mut String) -> String {
+pub fn chat_delta_to_responses_sse(delta: &Value, is_first: &mut bool, text_acc: &mut String, model: &str) -> String {
     let mut out = String::new();
     if *is_first {
         *is_first = false;
@@ -49,6 +49,7 @@ pub fn chat_delta_to_responses_sse(delta: &Value, is_first: &mut bool, text_acc:
                 "id": "resp_1",
                 "object": "response",
                 "status": "in_progress",
+                "model": model,
                 "output": []
             }
         });
@@ -91,7 +92,7 @@ pub fn chat_delta_to_responses_sse(delta: &Value, is_first: &mut bool, text_acc:
 }
 
 #[allow(dead_code)]
-pub fn build_responses_completed_events(text_acc: &str) -> String {
+pub fn build_responses_completed_events(text_acc: &str, model: &str) -> String {
     let mut out = String::new();
     let item = json!({
         "id": "item_1",
@@ -117,6 +118,7 @@ pub fn build_responses_completed_events(text_acc: &str) -> String {
         "id": "resp_1",
         "object": "response",
         "status": "completed",
+        "model": model,
         "output": [item]
     });
     let completed = json!({
@@ -125,6 +127,28 @@ pub fn build_responses_completed_events(text_acc: &str) -> String {
     });
     out.push_str(&format!("event: response.completed\ndata: {}\n\n", completed));
     
+    out.push_str("data: [DONE]\n\n");
+    out
+}
+
+#[allow(dead_code)]
+pub fn build_responses_failed_event(error_msg: &str, model: &str) -> String {
+    let mut out = String::new();
+    let failed = json!({
+        "type": "response.failed",
+        "response": {
+            "id": "resp_1",
+            "object": "response",
+            "status": "failed",
+            "model": model,
+            "error": {
+                "type": "server_error",
+                "code": "upstream_error",
+                "message": error_msg
+            }
+        }
+    });
+    out.push_str(&format!("event: response.failed\ndata: {}\n\n", failed));
     out.push_str("data: [DONE]\n\n");
     out
 }
@@ -150,7 +174,7 @@ mod tests {
         let delta = json!({});
         let mut is_first = true;
         let mut text_acc = String::new();
-        let output = chat_delta_to_responses_sse(&delta, &mut is_first, &mut text_acc);
+        let output = chat_delta_to_responses_sse(&delta, &mut is_first, &mut text_acc, "test-model");
         assert!(output.contains("response.created"));
         assert!(output.contains("response.output_item.added"));
     }

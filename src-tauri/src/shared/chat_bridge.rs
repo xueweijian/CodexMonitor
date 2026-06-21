@@ -1,6 +1,7 @@
 use crate::types::ThirdPartyProvider;
 use serde_json::{json, Value};
 use std::sync::Arc;
+use std::io::Read;
 
 pub mod translate;
 
@@ -70,8 +71,15 @@ pub fn start_chat_bridge(provider: ThirdPartyProvider) -> Result<u16, String> {
                     
                     let (tx, rx) = std::sync::mpsc::sync_channel::<Vec<u8>>(32);
                     
+                    let provider_model = provider.model.clone();
                     handle.spawn(async move {
                         if let Ok(mut res) = req.send().await {
+                            if !res.status().is_success() {
+                                let error_msg = format!("upstream returned HTTP {}", res.status());
+                                let end_events = translate::build_responses_failed_event(&error_msg, &provider_model);
+                                let _ = tx.send(end_events.into_bytes());
+                                return;
+                            }
                             let mut is_first = true;
                             let mut buffer = String::new();
                             let mut completed_sent = false;
@@ -92,12 +100,12 @@ pub fn start_chat_bridge(provider: ThirdPartyProvider) -> Result<u16, String> {
                                             if data_str == "[DONE]" {
                                                 if !completed_sent {
                                                     completed_sent = true;
-                                                    let end_events = translate::build_responses_completed_events(&text_acc);
+                                                    let end_events = translate::build_responses_completed_events(&text_acc, &provider_model);
                                                     let _ = tx.send(end_events.into_bytes());
                                                 }
                                                 break;
                                             } else if let Ok(parsed_delta) = serde_json::from_str::<Value>(data_str) {
-                                                let mapped = translate::chat_delta_to_responses_sse(&parsed_delta, &mut is_first, &mut text_acc);
+                                                let mapped = translate::chat_delta_to_responses_sse(&parsed_delta, &mut is_first, &mut text_acc, &provider_model);
                                                 if !mapped.is_empty() {
                                                     if tx.send(mapped.into_bytes()).is_err() {
                                                         break;
@@ -112,9 +120,12 @@ pub fn start_chat_bridge(provider: ThirdPartyProvider) -> Result<u16, String> {
                             }
                             
                             if !completed_sent {
-                                let end_events = translate::build_responses_completed_events(&text_acc);
+                                let end_events = translate::build_responses_completed_events(&text_acc, &provider_model);
                                 let _ = tx.send(end_events.into_bytes());
                             }
+                        } else {
+                            let end_events = translate::build_responses_failed_event("upstream connection failed", &provider_model);
+                            let _ = tx.send(end_events.into_bytes());
                         }
                     });
                     
