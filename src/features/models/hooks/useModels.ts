@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { DebugEntry, ModelOption, WorkspaceInfo } from "../../../types";
+import type { DebugEntry, ModelOption, WorkspaceInfo, ThirdPartyProvider } from "../../../types";
 import { getConfigModel, getModelList } from "../../../services/tauri";
 import {
   normalizeEffortValue,
   parseModelListResponse,
+  injectThirdPartyModel,
 } from "../utils/modelListResponse";
 
 type UseModelsOptions = {
@@ -12,6 +13,8 @@ type UseModelsOptions = {
   preferredModelId?: string | null;
   preferredEffort?: string | null;
   selectionKey?: string | null;
+  useThirdPartyProvider?: boolean;
+  thirdPartyProvider?: ThirdPartyProvider | null;
 };
 
 const CONFIG_MODEL_DESCRIPTION = "Configured in CODEX_HOME/config.toml";
@@ -42,6 +45,8 @@ export function useModels({
   preferredModelId = null,
   preferredEffort = null,
   selectionKey = null,
+  useThirdPartyProvider,
+  thirdPartyProvider,
 }: UseModelsOptions) {
   const [models, setModels] = useState<ModelOption[]>([]);
   const [configModel, setConfigModel] = useState<string | null>(null);
@@ -202,7 +207,12 @@ export function useModels({
         payload: response,
       });
       setConfigModel(configModelFromConfig);
-      const dataFromServer: ModelOption[] = parseModelListResponse(response);
+      const rawDataFromServer: ModelOption[] = parseModelListResponse(response);
+      const dataFromServer = injectThirdPartyModel(
+        rawDataFromServer,
+        thirdPartyProvider,
+        useThirdPartyProvider
+      );
       const data = (() => {
         if (!configModelFromConfig) {
           return dataFromServer;
@@ -260,8 +270,8 @@ export function useModels({
     preferredModelId,
     selectedEffort,
     selectedModelId,
-    resolveEffort,
-    workspaceId,
+    useThirdPartyProvider,
+    thirdPartyProvider,
   ]);
 
   useEffect(() => {

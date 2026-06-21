@@ -323,6 +323,8 @@ export default function MainApp() {
     preferredModelId,
     preferredEffort,
     selectionKey: threadCodexSelectionKey,
+    useThirdPartyProvider: appSettings.useThirdPartyProvider,
+    thirdPartyProvider: appSettings.thirdPartyProvider,
   });
 
   const {

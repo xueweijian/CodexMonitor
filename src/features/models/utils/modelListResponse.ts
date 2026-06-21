@@ -98,3 +98,35 @@ export function parseModelListResponse(response: unknown): ModelOption[] {
     })
     .filter((model): model is ModelOption => model !== null);
 }
+
+export function injectThirdPartyModel(
+  models: ModelOption[],
+  provider: import("../../../types").ThirdPartyProvider | null | undefined,
+  useThirdPartyProvider: boolean | undefined,
+  withSuffix: boolean | string = false,
+): ModelOption[] {
+  if (!useThirdPartyProvider || !provider?.model) {
+    return models;
+  }
+  const customModel = provider.model.trim();
+  if (customModel.length === 0) {
+    return models;
+  }
+
+  const suffixStr = typeof withSuffix === "string" 
+    ? withSuffix 
+    : (withSuffix ? " (第三方接入)" : "");
+
+  const customOption: ModelOption = {
+    id: customModel,
+    model: customModel,
+    displayName: suffixStr ? `${customModel}${suffixStr}` : customModel,
+    description: "Configured via Settings",
+    supportedReasoningEfforts: [],
+    defaultReasoningEffort: null,
+    isDefault: true,
+  };
+
+  const filtered = models.filter((m) => m.model !== customModel);
+  return [customOption, ...filtered];
+}

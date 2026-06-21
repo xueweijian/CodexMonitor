@@ -127,3 +127,23 @@ vi.mock("react-i18next", () => {
   };
 });
 
+const OriginalRelativeTimeFormat = Intl.RelativeTimeFormat;
+const MockRelativeTimeFormat = function (
+  locales?: string | string[],
+  options?: Intl.RelativeTimeFormatOptions,
+) {
+  return new OriginalRelativeTimeFormat(locales ?? "en-US", options);
+} as any;
+MockRelativeTimeFormat.supportedLocalesOf = OriginalRelativeTimeFormat.supportedLocalesOf;
+Object.defineProperty(Intl, "RelativeTimeFormat", { value: MockRelativeTimeFormat, writable: true });
+
+const OriginalDateTimeFormat = Intl.DateTimeFormat;
+const MockDateTimeFormat = function (
+  locales?: string | string[],
+  options?: Intl.DateTimeFormatOptions,
+) {
+  return new OriginalDateTimeFormat(locales ?? "en-US", options);
+} as any;
+MockDateTimeFormat.supportedLocalesOf = OriginalDateTimeFormat.supportedLocalesOf;
+Object.defineProperty(Intl, "DateTimeFormat", { value: MockDateTimeFormat, writable: true });
+

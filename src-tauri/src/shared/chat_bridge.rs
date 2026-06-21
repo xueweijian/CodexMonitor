@@ -1,4 +1,5 @@
 use crate::types::ThirdPartyProvider;
+use serde_json::{json, Value};
 use std::sync::Arc;
 
 pub mod translate;
@@ -13,7 +14,7 @@ pub fn start_chat_bridge(provider: ThirdPartyProvider) -> Result<u16, String> {
 
     std::thread::spawn(move || {
         let client = reqwest::Client::new();
-        for request in server.incoming_requests() {
+        for mut request in server.incoming_requests() {
             let provider = provider.clone();
             let client = client.clone();
             let handle = handle.clone();
@@ -36,6 +37,124 @@ pub fn start_chat_bridge(provider: ThirdPartyProvider) -> Result<u16, String> {
                     } else {
                         let _ = request.respond(tiny_http::Response::from_string("Error").with_status_code(500));
                     }
+                    return;
+                }
+                
+                if url.contains("responses") {
+                    let mut content = String::new();
+                    let _ = request.as_reader().read_to_string(&mut content);
+                    
+                    let parsed: Value = serde_json::from_str(&content).unwrap_or_else(|_| json!({}));
+                    let instructions = parsed.get("instructions").and_then(|i| i.as_str());
+                    let empty_arr = json!([]);
+                    let input = parsed.get("input").unwrap_or(&empty_arr);
+                    
+                    let messages = translate::responses_input_to_chat_messages(input, instructions);
+                    
+                    let payload = json!({
+                        "model": provider.model,
+                        "messages": messages,
+                        "stream": true
+                    });
+                    
+                    let target = format!("{}/chat/completions", provider.base_url);
+                    let body_str = serde_json::to_string(&payload).unwrap_or_default();
+                    let mut req = client.post(&target)
+                        .header("Content-Type", "application/json")
+                        .body(body_str);
+                    if let Some(ref k) = provider.api_key {
+                        if !k.is_empty() {
+                            req = req.header("Authorization", format!("Bearer {}", k));
+                        }
+                    }
+                    
+                    let (tx, rx) = std::sync::mpsc::sync_channel::<Vec<u8>>(32);
+                    
+                    handle.spawn(async move {
+                        if let Ok(mut res) = req.send().await {
+                            let mut is_first = true;
+                            let mut buffer = String::new();
+                            let mut completed_sent = false;
+                            let mut text_acc = String::new();
+                            
+                            while let Ok(chunk_opt) = res.chunk().await {
+                                if let Some(chunk_res) = chunk_opt {
+                                    let s = String::from_utf8_lossy(&chunk_res);
+                                    buffer.push_str(&s);
+                                    
+                                    while let Some(pos) = buffer.find('\n') {
+                                        let line = buffer[..pos].to_string();
+                                        buffer = buffer[pos + 1..].to_string();
+                                        
+                                        let line = line.trim();
+                                        if line.starts_with("data: ") {
+                                            let data_str = &line[6..];
+                                            if data_str == "[DONE]" {
+                                                if !completed_sent {
+                                                    completed_sent = true;
+                                                    let end_events = translate::build_responses_completed_events(&text_acc);
+                                                    let _ = tx.send(end_events.into_bytes());
+                                                }
+                                                break;
+                                            } else if let Ok(parsed_delta) = serde_json::from_str::<Value>(data_str) {
+                                                let mapped = translate::chat_delta_to_responses_sse(&parsed_delta, &mut is_first, &mut text_acc);
+                                                if !mapped.is_empty() {
+                                                    if tx.send(mapped.into_bytes()).is_err() {
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    break;
+                                }
+                            }
+                            
+                            if !completed_sent {
+                                let end_events = translate::build_responses_completed_events(&text_acc);
+                                let _ = tx.send(end_events.into_bytes());
+                            }
+                        }
+                    });
+                    
+                    struct ChannelReader {
+                        rx: std::sync::mpsc::Receiver<Vec<u8>>,
+                        buffer: std::io::Cursor<Vec<u8>>,
+                    }
+                    impl std::io::Read for ChannelReader {
+                        fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+                            if self.buffer.position() < self.buffer.get_ref().len() as u64 {
+                                return self.buffer.read(buf);
+                            }
+                            match self.rx.recv() {
+                                Ok(data) => {
+                                    self.buffer = std::io::Cursor::new(data);
+                                    self.buffer.read(buf)
+                                }
+                                Err(_) => Ok(0), // EOF
+                            }
+                        }
+                    }
+                    
+                    let reader = ChannelReader {
+                        rx,
+                        buffer: std::io::Cursor::new(Vec::new()),
+                    };
+                    
+                    // We need headers to specify event stream
+                    let headers = vec![
+                        tiny_http::Header::from_bytes(&b"Content-Type"[..], &b"text/event-stream"[..]).unwrap(),
+                        tiny_http::Header::from_bytes(&b"Cache-Control"[..], &b"no-cache"[..]).unwrap(),
+                    ];
+                    
+                    let response = tiny_http::Response::empty(200)
+                        .with_chunked_threshold(0)
+                        .with_data(reader, None);
+                        
+                    let response = headers.into_iter().fold(response, |r, h| r.with_header(h));
+                        
+                    let _ = request.respond(response);
                     return;
                 }
                 

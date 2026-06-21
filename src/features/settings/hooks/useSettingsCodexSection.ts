@@ -100,7 +100,7 @@ export const useSettingsCodexSection = ({
     error: defaultModelsError,
     connectedWorkspaceCount: defaultModelsConnectedWorkspaceCount,
     refresh: refreshDefaultModels,
-  } = useSettingsDefaultModels(projects);
+  } = useSettingsDefaultModels(projects, appSettings);
 
   const {
     content: globalAgentsContent,

@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ModelOption, WorkspaceInfo } from "@/types";
 import { connectWorkspace, getConfigModel, getModelList } from "@services/tauri";
-import { parseModelListResponse } from "@/features/models/utils/modelListResponse";
+import { injectThirdPartyModel, parseModelListResponse } from "@/features/models/utils/modelListResponse";
+
+import { useTranslation } from "react-i18next";
 
 type SettingsDefaultModelsState = {
   models: ModelOption[];
@@ -59,7 +61,11 @@ function compareModelsByLatest(a: ModelOption, b: ModelOption): number {
   return a.model.localeCompare(b.model);
 }
 
-export function useSettingsDefaultModels(projects: WorkspaceInfo[]) {
+export function useSettingsDefaultModels(
+  projects: WorkspaceInfo[],
+  appSettings?: import("@/types").AppSettings,
+) {
+  const { t } = useTranslation();
   const [state, setState] = useState<SettingsDefaultModelsState>(EMPTY_STATE);
   const requestIdRef = useRef(0);
   const sourceWorkspaceId = projects[0]?.id ?? null;
@@ -120,8 +126,17 @@ export function useSettingsDefaultModels(projects: WorkspaceInfo[]) {
         errors.push(`${sourceWorkspaceName}: ${message}`);
       }
 
-      const modelsFromList = parseModelListResponse(
+      const rawModelsFromList = parseModelListResponse(
         modelListResult.status === "fulfilled" ? modelListResult.value : null,
+      );
+      
+      const thirdPartySuffix = t("settings.models.thirdPartySuffix", { defaultValue: " (第三方接入)" });
+      
+      const modelsFromList = injectThirdPartyModel(
+        rawModelsFromList,
+        appSettings?.thirdPartyProvider,
+        appSettings?.useThirdPartyProvider,
+        thirdPartySuffix,
       );
       const configModel =
         configModelResult.status === "fulfilled" ? configModelResult.value : null;
@@ -164,7 +179,13 @@ export function useSettingsDefaultModels(projects: WorkspaceInfo[]) {
         });
       }
     }
-  }, [sourceWorkspaceConnected, sourceWorkspaceId, sourceWorkspaceName]);
+  }, [
+    sourceWorkspaceConnected,
+    sourceWorkspaceId,
+    sourceWorkspaceName,
+    appSettings?.useThirdPartyProvider,
+    appSettings?.thirdPartyProvider,
+  ]);
 
   useEffect(() => {
     void refresh();
