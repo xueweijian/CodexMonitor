@@ -395,8 +395,32 @@ mod tests {
 
     #[test]
     fn test_responses_tools_to_chat_tools() {
-        let tools = json!({});
-        let output = responses_tools_to_chat_tools(&tools);
-        assert_eq!(output, json!([]));
+        let tools = json!([
+            {
+                "type": "function",
+                "function": {
+                    "name": "test_func",
+                    "description": "test desc",
+                    "parameters": { "type": "object" }
+                }
+            }
+        ]);
+        let output = responses_tools_to_chat_tools(Some(&tools));
+        assert_eq!(
+            output,
+            Some(json!([
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "test_func",
+                        "description": "test desc",
+                        "parameters": { "type": "object" }
+                    }
+                }
+            ]))
+        );
+
+        let output_none = responses_tools_to_chat_tools(None);
+        assert_eq!(output_none, None);
     }
 }
